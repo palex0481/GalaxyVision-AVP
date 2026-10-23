@@ -29,3 +29,21 @@ minimal app `visionos/GalaxyVision` compiles and links with the generic visionOS
 - Game data import not implemented; data must be placed in the app container by hand. Disc extraction (iOS GalaxyPadDiscExtractor) not ported.
 - Touch/gyro/haptics UI, engine pause/widescreen/smooth-motion controls not wired.
 - `ref/ModernGekko` shows as deleted in the superproject worktree (not used by the visionOS build); left untouched/uncommitted.
+
+## Controls and launcher (visionos-port)
+
+- `visionos/Sources/GalaxyVisionSettings.*`: UserDefaults-backed settings (`gv.*` keys) shared by the launcher
+  (`@AppStorage`) and the controller / engine start-up.
+- `GalaxyVisionController.mm`: Switch-style mapping. Engine bits: A=North (A everywhere), B=East (Wii B: shoot
+  Star Bits / menu Back), C=Nunchuk C, Z=Nunchuk Z, Spin=Wii shake. Hovering the pointer collects Star Bits by
+  itself; B shoots them; holding A on the pointer grabs Pull Stars.
+  - PS / Xbox: left stick move, Cross A, Circle A (setting; else B), Square/Triangle spin, R2 B, L2 Z, L1 C,
+    right stick pointer (1.2 x dt/s x sensitivity, 0.15 dead zone), L3/R1/R3 recenter, Options Plus,
+    Create/Share Minus. Optional gyro aim (default off, axes unverified).
+  - N64 (Switch Online): A/B jump, Z crouch, L camera, R spin, C buttons nudge the pointer (hold accelerates),
+    C-down shoots (while Capture is held it nudges down instead), Capture recenters, Start pauses.
+- `GalaxyVisionLauncher.swift`: SwiftUI launcher (Play / View / Controls / Graphics). It lives in the scene
+  delegate; Play hides it and hands the scene to the engine's SDL scene delegate (no second UIApplicationMain).
+- Graphics: MSAA is not exposed by the engine and is unsafe with the game's depth copies, so it is disabled.
+  Supersampling maps to `PETARI_RENDER_SCALE`. Aspect ratio and Smooth Motion are applied after the engine starts
+  (aspect saved by the game for the next start; smooth motion needs >= 110 Hz).
