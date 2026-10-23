@@ -24,6 +24,8 @@ int galaxypad_engine_started(void);
 int galaxypad_engine_game_paused(void);  // 1 while the game's own pause menu is up
 void galaxypad_engine_pause(int paused);
 uint64_t galaxypad_engine_presented_frames(void);
+void galaxypad_engine_glow_enable(int enabled);                // ambient glow: sample the picture's edges (about 20 Hz)
+uint64_t galaxypad_engine_glow_colors(unsigned char *rgb192);  // newest 64 RGB cells (4 edges x 16); returns a sequence number
 void galaxypad_engine_quit(void);
 void galaxypad_engine_set_volume(float volume);
 int galaxypad_engine_widescreen(int value);

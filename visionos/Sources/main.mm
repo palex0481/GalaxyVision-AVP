@@ -276,6 +276,159 @@ static void GVStartFPSCounter(void) {
   sFPSTimer = [NSTimer scheduledTimerWithTimeInterval:0.5 repeats:YES block:^(NSTimer *timer) { GVFPSTick(); }];
 }
 
+// --- Ambient glow (flat window) ------------------------------------------------------------------
+// A soft glow of the picture's edge colours around the game, like a TV backlight. A visionOS window cannot draw
+// outside its own bounds, so while the glow is on the game's Metal view is scaled down about its centre (view
+// transform only: the engine's drawable and aspect are untouched) and the glow is drawn in the border that frees
+// up. The glow is a plain black view with four gradient strips, inserted directly BELOW the Metal view in the SDL
+// window (not a UIWindow, so no glass material). With the switch off nothing is inserted and the Metal view's
+// transform is the identity: the layout is exactly the old one.
+//
+// The colours come from the engine (galaxypad_engine_glow_colors: 4 edges x 16 cells, sampled about 20 times a
+// second by a tiny compute pass, asynchronous readback), smoothed here and drawn at 20 Hz. The switch, strength and
+// size are read from the settings every tick, so they apply live.
+static const int kGlowCells = 16;
+static UIView *sGlowView;
+static UIView *sGlowMetalView;
+static CAGradientLayer *sGlowEdges[4];  // top, right, bottom, left
+static float sGlowSmooth[kGlowCells * 4 * 3];
+static uint64_t sGlowSequence;
+static CFTimeInterval sGlowSequenceTime;
+static BOOL sGlowEngineOn;
+static NSTimer *sGlowTimer;
+
+static UIView *GVFindMetalView(UIView *view) {
+  if ([view.layer isKindOfClass:CAMetalLayer.class]) return view;
+  for (UIView *sub in view.subviews) {
+    UIView *found = GVFindMetalView(sub);
+    if (found) return found;
+  }
+  return nil;
+}
+
+static void GVGlowTeardown(void) {
+  if (sGlowEngineOn) {
+    galaxypad_engine_glow_enable(0);
+    sGlowEngineOn = NO;
+  }
+  if (sGlowMetalView && !CGAffineTransformIsIdentity(sGlowMetalView.transform)) sGlowMetalView.transform = CGAffineTransformIdentity;
+  [sGlowView removeFromSuperview];
+  sGlowView = nil;
+  sGlowMetalView = nil;
+  for (int i = 0; i < 4; ++i) sGlowEdges[i] = nil;
+  memset(sGlowSmooth, 0, sizeof sGlowSmooth);
+  sGlowSequence = 0;
+}
+
+static CAGradientLayer *GVMakeGlowEdge(UIView *container) {
+  CAGradientLayer *edge = [CAGradientLayer layer];
+  CAGradientLayer *mask = [CAGradientLayer layer];
+  mask.colors = @[ (id)[UIColor colorWithWhite:1 alpha:1.0].CGColor, (id)[UIColor colorWithWhite:1 alpha:0.55].CGColor,
+                   (id)[UIColor colorWithWhite:1 alpha:0.22].CGColor, (id)[UIColor colorWithWhite:1 alpha:0.06].CGColor,
+                   (id)[UIColor colorWithWhite:1 alpha:0.0].CGColor ];
+  mask.locations = @[ @0, @0.25, @0.5, @0.75, @1 ];
+  edge.mask = mask;
+  [container.layer addSublayer:edge];
+  return edge;
+}
+
+// Colours of one edge's cells as gradient stops. `from`/`span` map the cells onto the strip's length (points).
+static void GVSetGlowEdge(CAGradientLayer *edge, int index, CGRect frame, BOOL horizontal, CGFloat from, CGFloat span,
+                          CGFloat length, CGPoint maskStart, CGPoint maskEnd, float strength) {
+  edge.frame = frame;
+  CAGradientLayer *mask = (CAGradientLayer *)edge.mask;
+  mask.frame = edge.bounds;
+  mask.startPoint = maskStart;
+  mask.endPoint = maskEnd;
+  edge.opacity = strength;
+  edge.startPoint = CGPointMake(0, 0);
+  edge.endPoint = horizontal ? CGPointMake(1, 0) : CGPointMake(0, 1);
+  NSMutableArray *colors = [NSMutableArray arrayWithCapacity:kGlowCells + 2];
+  NSMutableArray *locations = [NSMutableArray arrayWithCapacity:kGlowCells + 2];
+  for (int i = -1; i <= kGlowCells; ++i) {
+    const int cell = MIN(MAX(i, 0), kGlowCells - 1);
+    const float *c = &sGlowSmooth[(index * kGlowCells + cell) * 3];
+    [colors addObject:(id)[UIColor colorWithRed:c[0] green:c[1] blue:c[2] alpha:1].CGColor];
+    CGFloat at = i < 0 ? 0 : (i >= kGlowCells ? 1 : (from + (i + 0.5) / kGlowCells * span) / length);
+    [locations addObject:@(MIN(MAX(at, 0), 1))];
+  }
+  // Stops must not decrease; the clamp keeps them in order.
+  edge.colors = colors;
+  edge.locations = locations;
+}
+
+static void GVGlowTick(void) {
+  UIWindow *gameWindow = GVGameWindow();
+  const BOOL wanted = GalaxyVisionSettings.ambientGlow && !GalaxyVisionSettings.stereoSelected && gameWindow &&
+                      galaxypad_engine_started();
+  if (!wanted) {
+    if (sGlowView || sGlowEngineOn) GVGlowTeardown();
+    return;
+  }
+  if (!sGlowView) {
+    UIView *metal = GVFindMetalView(gameWindow);
+    UIView *parent = metal.superview;
+    if (!metal || !parent) return;  // the engine's Metal view isn't there yet
+    if (metal == gameWindow.rootViewController.view || metal == gameWindow) {
+      // The picture is the window's own root view: scaling it would shrink the overlay too. Leave the layout alone.
+      static BOOL logged;
+      if (!logged) { logged = YES; fprintf(stderr, "GalaxyVision glow: the game's Metal view is the root view, glow not available\n"); }
+      return;
+    }
+    sGlowMetalView = metal;
+    sGlowView = [[UIView alloc] initWithFrame:parent.bounds];
+    sGlowView.backgroundColor = UIColor.blackColor;
+    sGlowView.userInteractionEnabled = NO;
+    sGlowView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
+    [parent insertSubview:sGlowView belowSubview:metal];
+    for (int i = 0; i < 4; ++i) sGlowEdges[i] = GVMakeGlowEdge(sGlowView);
+    memset(sGlowSmooth, 0, sizeof sGlowSmooth);
+    sGlowSequenceTime = CACurrentMediaTime();
+  }
+  if (!sGlowEngineOn) {
+    galaxypad_engine_glow_enable(1);
+    sGlowEngineOn = YES;
+  }
+
+  // Colours: newest samples, smoothed (about 0.15 s), fading to black when no new sample arrives (VI black).
+  unsigned char rgb[kGlowCells * 4 * 3];
+  const uint64_t sequence = galaxypad_engine_glow_colors(rgb);
+  const CFTimeInterval now = CACurrentMediaTime();
+  if (sequence != sGlowSequence) {
+    sGlowSequence = sequence;
+    sGlowSequenceTime = now;
+  }
+  const BOOL stale = sequence == 0 || now - sGlowSequenceTime > 0.7;
+  for (int i = 0; i < kGlowCells * 4 * 3; ++i) {
+    const float target = stale ? 0.0f : rgb[i] / 255.0f;
+    sGlowSmooth[i] += (target - sGlowSmooth[i]) * 0.35f;
+  }
+
+  // Layout: the game scaled about its centre, the glow strips in the border.
+  const float strength = GalaxyVisionSettings.glowStrength;
+  const CGFloat fraction = 0.03 + 0.09 * GalaxyVisionSettings.glowSize;  // border per side, share of the window
+  const CGFloat scale = 1.0 - 2.0 * fraction;
+  const CGAffineTransform transform = CGAffineTransformMakeScale(scale, scale);
+  [CATransaction begin];
+  [CATransaction setDisableActions:YES];
+  if (!CGAffineTransformEqualToTransform(sGlowMetalView.transform, transform)) sGlowMetalView.transform = transform;
+  const CGRect bounds = sGlowView.bounds;
+  const CGRect inner = sGlowMetalView.frame;  // includes the transform
+  const CGFloat W = bounds.size.width, H = bounds.size.height;
+  const CGFloat top = CGRectGetMinY(inner), bottom = CGRectGetMaxY(inner);
+  const CGFloat left = CGRectGetMinX(inner), right = CGRectGetMaxX(inner);
+  GVSetGlowEdge(sGlowEdges[0], 0, CGRectMake(0, 0, W, top), YES, left, inner.size.width, W, CGPointMake(0.5, 1), CGPointMake(0.5, 0), strength);
+  GVSetGlowEdge(sGlowEdges[1], 1, CGRectMake(right, top, W - right, inner.size.height), NO, 0, inner.size.height, inner.size.height, CGPointMake(0, 0.5), CGPointMake(1, 0.5), strength);
+  GVSetGlowEdge(sGlowEdges[2], 2, CGRectMake(0, bottom, W, H - bottom), YES, left, inner.size.width, W, CGPointMake(0.5, 0), CGPointMake(0.5, 1), strength);
+  GVSetGlowEdge(sGlowEdges[3], 3, CGRectMake(0, top, left, inner.size.height), NO, 0, inner.size.height, inner.size.height, CGPointMake(1, 0.5), CGPointMake(0, 0.5), strength);
+  [CATransaction commit];
+}
+
+static void GVStartGlow(void) {
+  if (sGlowTimer) return;
+  sGlowTimer = [NSTimer scheduledTimerWithTimeInterval:0.05 repeats:YES block:^(NSTimer *timer) { GVGlowTick(); }];
+}
+
 static void GVObserveGameScene(UIWindowScene *scene) {
   sGameScene = scene;
   GalaxyVisionController.shared.onOptionsRequested = ^{ GVShowOverlay(); };
@@ -308,6 +461,7 @@ static void GVHandOffToEngine(UIScene *scene, UISceneSession *session, UISceneCo
   if ([scene isKindOfClass:UIWindowScene.class]) GVObserveGameScene((UIWindowScene *)scene);
   if (GalaxyVisionSettings.stereoSelected) GVStartStereo();
   GVStartFPSCounter();
+  GVStartGlow();
 }
 
 - (void)scene:(UIScene *)scene willConnectToSession:(UISceneSession *)session options:(UISceneConnectionOptions *)options {

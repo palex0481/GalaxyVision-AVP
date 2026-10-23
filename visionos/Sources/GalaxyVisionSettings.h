@@ -11,6 +11,9 @@ extern NSString *const GVKeyStereoResolution;   // Int 540 / 720 / 1080: the ste
 extern NSString *const GVKeyStereoSharp;        // Bool: sharp upscaling (MetalFX) of the stereo eye images at Low / Medium (default on)
 extern NSString *const GVKeyStereoConvergence;  // Double 400...3000: game units to the zero-parallax plane (default 1200)
 extern NSString *const GVKeyShowFPS;            // Bool: small frame-rate counter in the game window's top-right corner (testing, default on)
+extern NSString *const GVKeyAmbientGlow;        // Bool: soft glow of the picture's edge colours around the flat window (default off)
+extern NSString *const GVKeyGlowStrength;       // Double 0.1...1: glow brightness (default 0.7)
+extern NSString *const GVKeyGlowSize;           // Double 0...1: how far the glow reaches, 3% to 12% of the window per side (default 0.5)
 extern NSString *const GVKeyPointerSensitivity; // Double 0.5...2.0, scales pointer speed (default 1.0)
 extern NSString *const GVKeyPointerMode;        // Int: 0 when moved, 1 always, 2 hidden
 extern NSString *const GVKeyGyroAim;            // Bool, PS pads with motion only (default off)
@@ -24,6 +27,9 @@ extern NSString *const GVKeySmoothMotion;       // Bool (only has an effect on >
 @interface GalaxyVisionSettings : NSObject
 + (void)registerDefaults;
 @property(class, readonly) BOOL showFPS;
+@property(class, readonly) BOOL ambientGlow;
+@property(class, readonly) float glowStrength;
+@property(class, readonly) float glowSize;
 @property(class, readonly) float pointerSensitivity;
 @property(class, readonly) NSInteger pointerMode;
 @property(class, readonly) BOOL gyroAim;

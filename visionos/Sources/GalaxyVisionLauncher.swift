@@ -249,6 +249,8 @@ private struct ViewModeTab: View {
         }
         if viewMode == "stereo" {
           StereoSettingsSection(inGame: false)
+        } else {
+          AmbientGlowSection()
         }
       }
       .navigationTitle("View")
@@ -338,6 +340,36 @@ private struct ControlsTab: View {
   }
 }
 
+// MARK: - Ambient glow
+
+/// A soft glow of the picture's edge colours around the flat window (like a TV backlight). Changes apply right away,
+/// also while playing. The glow lives inside the window, so the picture is drawn a little smaller while it is on.
+private struct AmbientGlowSection: View {
+  @AppStorage(GVKeyAmbientGlow) private var glow = false
+  @AppStorage(GVKeyGlowStrength) private var strength = 0.7
+  @AppStorage(GVKeyGlowSize) private var size = 0.5
+
+  var body: some View {
+    Section {
+      Toggle("Ambient glow", isOn: $glow)
+      if glow {
+        VStack(alignment: .leading) {
+          Text("Glow strength")
+          Slider(value: $strength, in: 0.1...1.0)
+        }
+        VStack(alignment: .leading) {
+          Text("Glow size")
+          Slider(value: $size, in: 0.0...1.0)
+        }
+      }
+    } header: {
+      Text("Ambient glow")
+    } footer: {
+      Text("A soft glow around the game window that follows the colours at the picture\u{2019}s edges. The window can\u{2019}t draw outside itself, so while it is on the picture is shown a little smaller, with the glow in the border. Off keeps the window exactly as it is. Flat window only. Turns on and off right away.")
+    }
+  }
+}
+
 // MARK: - Graphics
 
 private struct GraphicsTab: View {
@@ -383,6 +415,9 @@ private struct GraphicsTab: View {
         }
         if inGame && viewMode == "stereo" {
           StereoSettingsSection(inGame: true, onChange: onDisplayChange)
+        }
+        if inGame && viewMode != "stereo" {
+          AmbientGlowSection()
         }
       }
       .navigationTitle("Graphics")

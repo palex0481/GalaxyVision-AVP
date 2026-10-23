@@ -148,3 +148,22 @@ Not done: recording the GX stream once and replaying it for the second eye. J3D 
 inside the draw stream, so a replay has to patch matrices in the FIFO; too risky to do without a device to test on.
 Expected gain of the shipped changes is an estimate only (about 23 ms -> 13-17 ms per step); read the new log lines after
 a stereo session to verify. 60 fps at 1080p per eye is unproven.
+
+## Ambient glow (flat window)
+
+A switch in the launcher's View tab (flat mode) and the in-game Graphics tab: **Ambient glow** (default off), with
+**Glow strength** and **Glow size** sliders shown while it is on. Settings keys `gv.ambientGlow`, `gv.glowStrength`
+(0.1-1, default 0.7), `gv.glowSize` (0-1, default 0.5). The app reads them every 50 ms, so they apply live.
+
+- **Layout constraint.** A visionOS window can't draw outside its bounds, so the glow lives in a border inside the window:
+  while on, the engine's Metal view is scaled down about its centre (view transform only; the drawable, aspect and
+  window size are untouched) by 1 - 2f, f = 3%..12% per side (Glow size). The glow is a black UIView with four
+  gradient strips inserted directly below the Metal view in the SDL window's root view (not a UIWindow, so no glass
+  material). Off: nothing is inserted, the transform is the identity, the layout is the old one. Stereo mode: no glow.
+- **Colours.** `present_aurora.cpp` (render worker): while enabled, about 20x/s a tiny compute pass averages 16 cells per
+  edge (a band 7% deep, 8x6 taps each) of the presented XFB into 64 RGB values, copies the 256 bytes to a small buffer
+  and maps it asynchronously (no wait, no full-frame readback). Disabled: no work at all. Exports
+  `galaxypad_engine_glow_enable` / `galaxypad_engine_glow_colors`. The app smooths them (about 0.15 s) and fades to
+  black when no new sample arrives for 0.7 s (VI black).
+- Pointer note: with the picture scaled, window-pointer (not controller) positions are off by the scale while the glow is on.
+- Unverified on device.
