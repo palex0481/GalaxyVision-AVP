@@ -333,3 +333,25 @@ per game step (60 Hz at best, measured ~60 fps at 1080p), and replaying a record
 lines; a pose-in/pose-out engine API, ~100 lines in `Stereo.cpp`/`stereo_bridge.cpp`), no extra render cost, and
 a clear "this looks 3D" payoff. Milestone 2 (world around you) is a research task; decide after seeing 0/1 on device
 and the actual GPU time at larger eye sizes.
+
+## Ray surfing with a controller (tilt)
+
+The game steers Ray surfing (and the SurfRayTutorial "turn left / turn right" steps) by the Wii Remote's
+accelerometer. The engine already turns the left stick into a remote twist while the game reports that it is
+steering by tilt (`motionControlShown(Ray)`, 100 ms hint). Two gaps made it fail on the headset's pads:
+
+- The tutorial's "turn" needs 0.65 g, i.e. a twist of about 41 of the 45 degrees the stick can give. With the
+  dead-zone rescale that took a stick at >= 92% of its travel. An N64 pad's gate or a DualSense that does not
+  quite reach its rim stays below it, so the tutorial waited for the turn forever. Fix (engine,
+  `remote_model.cpp`): while Ray surfing steers, the stick is scaled by 1.5 and clamped, so ~2/3 travel is a
+  full twist. Other rides and normal play are untouched.
+- No motion path for the pad's own gyro. New: `galaxypad_engine_set_tilt(lean)` (-1 left .. 1 right) and
+  `galaxypad_engine_steering()` (0 none, 1 Star Ball, 2 Ray). The host (`GalaxyVisionController.mm`) sends the
+  DualSense lean (GCMotion gravity x, 6 degree dead zone, full at 25 degrees) while "Lean the pad to steer
+  surfing" is on (Controls tab, default on, "Invert lean" next to it). The engine uses it only while Ray
+  surfing steers; the stronger of stick and lean wins.
+- The trace log gets "galaxyvision: tilt steering Ray surfing / off" lines when the game starts or stops asking
+  for tilt.
+
+Engine tests: `native/tests/input_tests.cpp` (standalone input build, 722 checks pass), including a stick at
+85% and a pad lean for the tutorial's turn-left.

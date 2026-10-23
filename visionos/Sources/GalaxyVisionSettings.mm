@@ -23,6 +23,8 @@ NSString *const GVKeyPointerMode = @"gv.pointerMode";
 NSString *const GVKeyGyroAim = @"gv.gyroAim";
 NSString *const GVKeyGyroInvertX = @"gv.gyroInvertX";
 NSString *const GVKeyGyroInvertY = @"gv.gyroInvertY";
+NSString *const GVKeyTiltSteer = @"gv.tiltSteer";
+NSString *const GVKeyTiltInvert = @"gv.tiltInvert";
 NSString *const GVKeyBButtonJumps = @"gv.bButtonJumps";
 NSString *const GVKeyRenderScale = @"gv.supersampling";
 NSString *const GVKeyAspect = @"gv.aspect";
@@ -45,6 +47,7 @@ static NSUserDefaults *Defaults(void) { return NSUserDefaults.standardUserDefaul
     GVKeyImmersiveSize: @6.0,
     GVKeyImmersiveDistance: @3.5,
     GVKeyShowFPS: @YES,
+    GVKeyTiltSteer: @YES,
     GVKeyAmbientGlow: @NO,
     GVKeyGlowStrength: @0.7,
     GVKeyGlowSize: @0.5,
@@ -77,6 +80,8 @@ static NSUserDefaults *Defaults(void) { return NSUserDefaults.standardUserDefaul
 + (BOOL)gyroAim { return [Defaults() boolForKey:GVKeyGyroAim]; }
 + (BOOL)gyroInvertX { return [Defaults() boolForKey:GVKeyGyroInvertX]; }
 + (BOOL)gyroInvertY { return [Defaults() boolForKey:GVKeyGyroInvertY]; }
++ (BOOL)tiltSteer { return [Defaults() boolForKey:GVKeyTiltSteer]; }
++ (BOOL)tiltInvert { return [Defaults() boolForKey:GVKeyTiltInvert]; }
 + (BOOL)bButtonJumps { return [Defaults() boolForKey:GVKeyBButtonJumps]; }
 // Only 2x and 3x of the game's framebuffer (640x456; both at or below the 2560x1440 headset window) are
 // offered. Anything above (the old 4x option) exceeds the window's drawable and broke the aspect ratio,

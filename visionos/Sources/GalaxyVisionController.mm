@@ -58,6 +58,8 @@ static const float kStickPointerSpeed = 1.2f;  // viewport widths per second at 
   CFTimeInterval _nudgeStartX, _nudgeStartY;
   // gyro
   GCController *_motionOwner;
+  float _lastLean;  // last tilt sent to the engine (Ray surfing)
+  int _lastSteering;
   // options shortcut: R1/RB press (PS/Xbox pads), or Start + Capture held (N64 pad)
   BOOL _r1Held;
   CFTimeInterval _comboStart;
@@ -133,6 +135,14 @@ static const float kStickPointerSpeed = 1.2f;  // viewport widths per second at 
   const float dt = _lastTime > 0 ? (float)std::clamp(now - _lastTime, 0.0, 0.05) : 0.f;
   _lastTime = now;
 
+  // Trace when the game starts or stops steering by tilt (Star Ball / Ray surfing), to tell "the game
+  // never asked for tilt" from "it asked and the input did not turn it".
+  const int steering = galaxypad_engine_steering();
+  if (steering != _lastSteering) {
+    fprintf(stderr, "galaxyvision: tilt steering %s\n", steering == 2 ? "Ray surfing" : steering == 1 ? "Star Ball" : "off");
+    _lastSteering = steering;
+  }
+
   GCController *controller = nil;
   GCExtendedGamepad *pad = nil;
   for (GCController *c in GCController.controllers) {
@@ -161,6 +171,7 @@ static const float kStickPointerSpeed = 1.2f;  // viewport widths per second at 
     if (pad.leftTrigger.value > 0.3f || pad.leftTrigger.pressed) buttons |= kZ;  // L2 / N64 Z
 
     if (n64) {
+      [self sendLean:0.f];  // no motion on the N64 pad: the stick steers surfing
       // Switch Online N64 pad: C buttons arrive as the right thumbstick's digital directions.
       if (pad.leftShoulder.pressed) buttons |= kC;      // L: camera reset
       if (pad.rightShoulder.pressed) buttons |= kSpin;  // R: spin / pick up / throw
@@ -197,6 +208,7 @@ static const float kStickPointerSpeed = 1.2f;  // viewport widths per second at 
     }
   } else {
     _recenterHeld = _captureHeld = NO;
+    [self sendLean:0.f];
     _r1Held = NO;
     _nudgeDirX = _nudgeDirY = 0;
   }
@@ -264,16 +276,40 @@ static const float kStickPointerSpeed = 1.2f;  // viewport widths per second at 
   step(dirY, _nudgeDirY, _nudgeStartY, _py, 1.f);
 }
 
+- (void)sendLean:(float)lean {
+  if (lean == _lastLean) return;
+  _lastLean = lean;
+  galaxypad_engine_set_tilt(lean);
+}
+
 // Optional gyro aiming for pads with motion (DualSense / DualShock). Adds to the pointer.
 // Axes: GCMotion rotation rate, z = yaw (turn left/right), x = pitch. Invert in the launcher if needed.
+// Also (default on) the pad's lean for Ray surfing, see below.
 - (void)pollGyro:(GCController *)controller dt:(float)dt sens:(float)sens {
   GCMotion *motion = controller.motion;
+  const BOOL wantAim = GalaxyVisionSettings.gyroAim;
+  const BOOL wantTilt = GalaxyVisionSettings.tiltSteer;
   if (_motionOwner && _motionOwner != controller) { _motionOwner.motion.sensorsActive = NO; _motionOwner = nil; }
-  if (!GalaxyVisionSettings.gyroAim || !motion || !motion.hasRotationRate) {
+  if ((!wantAim && !wantTilt) || !motion || !motion.hasRotationRate) {
     if (_motionOwner) { _motionOwner.motion.sensorsActive = NO; _motionOwner = nil; }
+    [self sendLean:0.f];
     return;
   }
   if (!_motionOwner) { motion.sensorsActive = YES; _motionOwner = controller; return; }
+
+  // Lean the pad left or right (like a steering wheel) to steer Ray surfing. The engine only uses it
+  // while the game steers by tilt, and the left stick still works. Gravity in the pad's own frame:
+  // x points to the pad's right, so leaning right (right side down) gives positive x.
+  float lean = 0.f;
+  if (wantTilt && motion.hasGravityAndUserAcceleration) {
+    const double gx = std::clamp(motion.gravity.x, -1.0, 1.0);
+    const float angle = (float)std::asin(std::abs(gx)) * (180.f / (float)M_PI);
+    const float mag = std::clamp((angle - 6.f) / (25.f - 6.f), 0.f, 1.f);  // 6 deg dead zone, full at 25 deg
+    lean = (gx < 0 ? -mag : mag) * (GalaxyVisionSettings.tiltInvert ? -1.f : 1.f);
+  }
+  [self sendLean:lean];
+
+  if (!wantAim) return;
   GCRotationRate r = motion.rotationRate;
   auto quiet = [](double v) { return std::abs(v) < 0.012 ? 0.0 : std::clamp(v, -12.0, 12.0); };
   const double yaw = quiet(r.z), pitch = quiet(r.x);

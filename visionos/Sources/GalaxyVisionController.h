@@ -30,4 +30,8 @@ void galaxypad_engine_quit(void);
 void galaxypad_engine_set_volume(float volume);
 int galaxypad_engine_widescreen(int value);
 int galaxypad_engine_smooth_motion(int value);
+// Ride steering: a controller's own lean (-1 left .. 1 right, 0 none) for Ray surfing, and what the
+// game steers by tilt right now (0 none, 1 Star Ball, 2 Ray).
+void galaxypad_engine_set_tilt(float lean);
+int galaxypad_engine_steering(void);
 }
