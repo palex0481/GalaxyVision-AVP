@@ -44,14 +44,18 @@ minimal app `visionos/GalaxyVision` compiles and links with the generic visionOS
     C-down shoots (while Capture is held it nudges down instead), Capture recenters, Start pauses.
 - `GalaxyVisionLauncher.swift`: SwiftUI launcher (Play / View / Controls / Graphics). It lives in the scene
   delegate; Play hides it and hands the scene to the engine's SDL scene delegate (no second UIApplicationMain).
-- Graphics: the MSAA row was removed (not usable in this engine). "Render resolution" maps to `PETARI_RENDER_SCALE`
+- Graphics: the MSAA row was removed (not usable in this engine). The picker is labelled "Supersampling" (Off / 2x / 3x; Off = engine native) and maps to `PETARI_RENDER_SCALE`
   and offers only 2x/3x of the game framebuffer (below the 2560x1440 headset window); the old 4x (framebuffer larger than
   the window drawable) showed the picture at ~80% size, anchored top-left, with a dark panel right and below. Cause not
   proven statically; with a non-default scale the shell writes PETARI_TRACE_BOOT output (surface/EFB/XFB/viewport sizes)
   to `Library/Caches/galaxyvision-trace.log` in the app container.
-- In game: hold Options + Create (N64 pad: Start + Capture) for 0.5 s -> options overlay (second UIWindow in the game's
+- In game: a subtle "Options" pill (top right, own non-key passthrough UIWindow, shown once the engine reports started, with a
+  7 s hint toast) opens the overlay; the pad combo does too. The overlay's Saving tab has "Quit GalaxyVision..." (confirmation
+  dialog, calls galaxypad_engine_quit, no save). The engine's PauseMenu is decompiled game code inside the framework (the shell
+  can't add an entry without rebuilding the engine; no exported pause-state query), so no hook was added.
+- Overlay (combo or pill): hold Options + Create (N64 pad: Start + Capture) for 0.5 s -> options overlay (second UIWindow in the game's
   scene, game paused via galaxypad_engine_pause, no input forwarded). Pointer/gyro/button settings apply live, aspect and
-  smooth motion are re-applied to the engine, render resolution applies on next start. The engine cannot return to the
+  smooth motion are re-applied to the engine, supersampling applies on next start. The engine cannot return to the
   launcher mid-game (SDL window + render loop live until exit).
 - Save: the game's own save sequence cannot be started safely from a lifecycle callback, so on scene re-activation after a
   resign/background the shell shows a "Closing the window does not save" toast; the overlay and launcher repeat it.

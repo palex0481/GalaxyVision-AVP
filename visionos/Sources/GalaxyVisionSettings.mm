@@ -40,8 +40,7 @@ static NSUserDefaults *Defaults(void) { return NSUserDefaults.standardUserDefaul
 + (BOOL)gyroInvertX { return [Defaults() boolForKey:GVKeyGyroInvertX]; }
 + (BOOL)gyroInvertY { return [Defaults() boolForKey:GVKeyGyroInvertY]; }
 + (BOOL)bButtonJumps { return [Defaults() boolForKey:GVKeyBButtonJumps]; }
-// Only the reduced scales (2x, 3x of the game's framebuffer, below the 2560x1440 headset window)
-// are offered. Anything above (the removed 4x option, or a stale value) means native: a
+// Only 2x and 3x of the game's framebuffer (below the 2560x1440 headset window) are offered. Anything above (the removed 4x option, or a stale value) means native: a
 // framebuffer larger than the window's drawable broke the window's aspect ratio.
 + (double)renderScale {
   const double v = [Defaults() doubleForKey:GVKeyRenderScale];

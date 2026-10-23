@@ -24,10 +24,12 @@ final class GVLauncherFactory: NSObject {
 final class GVOverlayFactory: NSObject {
   /// - onDisplayChange: aspect ratio / smooth motion changed; apply them to the running engine.
   /// - onResume: close the overlay and unpause the game.
+  /// - onQuit: stop the game and close GalaxyVision (only after the player confirms in the overlay).
   @objc static func makeViewController(onDisplayChange: @escaping () -> Void,
-                                       onResume: @escaping () -> Void) -> UIViewController {
+                                       onResume: @escaping () -> Void,
+                                       onQuit: @escaping () -> Void) -> UIViewController {
     GalaxyVisionSettings.registerDefaults()
-    let host = UIHostingController(rootView: InGameOverlayView(onDisplayChange: onDisplayChange, onResume: onResume))
+    let host = UIHostingController(rootView: InGameOverlayView(onDisplayChange: onDisplayChange, onResume: onResume, onQuit: onQuit))
     host.view.backgroundColor = .clear
     return host
   }
@@ -36,6 +38,7 @@ final class GVOverlayFactory: NSObject {
 struct InGameOverlayView: View {
   let onDisplayChange: () -> Void
   let onResume: () -> Void
+  let onQuit: () -> Void
 
   var body: some View {
     ZStack {
@@ -52,7 +55,7 @@ struct InGameOverlayView: View {
         TabView {
           Tab("Controls", systemImage: "gamecontroller") { ControlsTab() }
           Tab("Graphics", systemImage: "paintbrush") { GraphicsTab(inGame: true, onDisplayChange: onDisplayChange) }
-          Tab("Saving", systemImage: "square.and.arrow.down") { SavingTab() }
+          Tab("Saving", systemImage: "square.and.arrow.down") { SavingTab(onQuit: onQuit) }
         }
       }
       .frame(maxWidth: 900, maxHeight: 640)
@@ -63,6 +66,9 @@ struct InGameOverlayView: View {
 }
 
 private struct SavingTab: View {
+  let onQuit: () -> Void
+  @State private var confirmQuit = false
+
   var body: some View {
     NavigationStack {
       Form {
@@ -73,16 +79,31 @@ private struct SavingTab: View {
         } header: {
           Text("Saving")
         } footer: {
-          Text("Controller shortcut for this screen: hold Options + Create (PlayStation) or Start + Capture (N64 pad) for half a second.")
+          Text("Open this screen any time with the Options button at the top right of the game, or hold Options + Create (PlayStation) or Start + Capture (N64 pad) for half a second.")
+        }
+        Section {
+          Button(role: .destructive) { confirmQuit = true } label: {
+            Label("Quit GalaxyVision\u{2026}", systemImage: "power")
+          }
+        } header: {
+          Text("Back to the launcher")
+        } footer: {
+          Text("The game cannot return to the launcher while it runs. Quitting closes GalaxyVision; open it again from Home View to see the launcher. Anything since your last save is lost.")
         }
         Section("Applies right away") {
           Text("Pointer, gyro and button settings (Controls tab), aspect ratio and smooth motion (Graphics tab; the aspect ratio is saved by the game and fully applies on the next start).")
         }
         Section("Applies on next start") {
-          Text("Render resolution. Quit GalaxyVision after saving and open it again to change it.")
+          Text("Supersampling. Quit GalaxyVision after saving and open it again to change it.")
         }
       }
       .navigationTitle("Saving")
+      .confirmationDialog("Quit GalaxyVision without saving?", isPresented: $confirmQuit, titleVisibility: .visible) {
+        Button("Quit without saving", role: .destructive) { onQuit() }
+        Button("Cancel", role: .cancel) { }
+      } message: {
+        Text("Progress since your last save is lost. To keep it, tap Cancel, Resume, then use Pause \u{203A} Save your progress and quit.")
+      }
     }
   }
 }
@@ -136,7 +157,7 @@ private struct PlayTab: View {
           .buttonStyle(.borderedProminent)
           .controlSize(.extraLarge)
           .disabled(started)
-          Text("The first start prepares shaders and can take a while. Settings apply when you press Play. In game, hold Options + Create (or Start + Capture on the N64 pad) for the options screen. Closing the window does not save: use Pause > Save your progress and quit.")
+          Text("The first start prepares shaders and can take a while. Settings apply when you press Play. In game, tap the Options button at the top right (or hold Options + Create, or Start + Capture on the N64 pad) for the options screen. Closing the window does not save: use Pause > Save your progress and quit.")
             .font(.footnote).foregroundStyle(.secondary)
         } else {
           Label("No game data found", systemImage: "exclamationmark.triangle.fill")
@@ -278,15 +299,15 @@ private struct GraphicsTab: View {
     NavigationStack {
       Form {
         Section {
-          Picker("Render resolution", selection: $renderScale) {
-            Text("Native (default)").tag(0.0)
-            Text("Reduced: 3x game size").tag(3.0)
-            Text("Reduced: 2x game size").tag(2.0)
+          Picker("Supersampling", selection: $renderScale) {
+            Text("Off").tag(0.0)
+            Text("2x").tag(2.0)
+            Text("3x").tag(3.0)
           }
         } header: {
-          Text("Resolution")
+          Text("Supersampling")
         } footer: {
-          Text("Native already renders about 3.2x the game's own 640x456 frame (the headset window is 2560x1440 pixels). Supersampling above native (the old 4x option) broke the window's aspect ratio and was removed; the reduced options trade sharpness for speed.\(inGame ? " Applies on the next start." : "")")
+          Text("Supersampling renders the game at a multiple of its own frame size for smoother edges. Higher values cost performance.\(inGame ? " Applies on the next start." : "")")
         }
         Section {
           Picker("Aspect ratio", selection: $aspect) {

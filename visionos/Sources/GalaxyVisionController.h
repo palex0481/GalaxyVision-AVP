@@ -22,6 +22,7 @@ void galaxypad_engine_input(uint32_t buttons, float stickX, float stickY, int po
                             float pointerX, float pointerY);
 int galaxypad_engine_started(void);
 void galaxypad_engine_pause(int paused);
+void galaxypad_engine_quit(void);
 void galaxypad_engine_set_volume(float volume);
 int galaxypad_engine_widescreen(int value);
 int galaxypad_engine_smooth_motion(int value);

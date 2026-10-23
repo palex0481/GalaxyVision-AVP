@@ -54,15 +54,65 @@ static UIWindowScene *sGameScene;
 static UIWindow *sOverlayWindow;
 static UIWindow *sToastWindow;
 static BOOL sSceneResigned;
+static UIWindow *sPillWindow;
+static void GVShowToast(NSString *text, NSTimeInterval seconds);
+
+// A small always-visible "Options" pill over the game (top right). It sits in its own UIWindow that
+// never becomes key (the engine's window keeps focus and the controller) and lets every touch that
+// misses the pill through to the game. Pinch-selectable like any button.
+@interface GVPassthroughWindow : UIWindow
+@property(nonatomic, weak) UIView *pill;
+@end
+@implementation GVPassthroughWindow
+- (BOOL)canBecomeKeyWindow { return NO; }
+- (UIView *)hitTest:(CGPoint)point withEvent:(UIEvent *)event {
+  UIView *hit = [super hitTest:point withEvent:event];
+  UIView *pill = self.pill;
+  if (pill && hit && (hit == pill || [hit isDescendantOfView:pill])) return hit;
+  return nil;
+}
+@end
+
+static void GVShowOverlay(void);
+
+static void GVShowPill(void) {
+  if (sPillWindow || !sGameScene) return;
+  GVPassthroughWindow *window = [[GVPassthroughWindow alloc] initWithWindowScene:sGameScene];
+  window.windowLevel = UIWindowLevelAlert + 3;
+  window.backgroundColor = UIColor.clearColor;
+  UIViewController *vc = [[UIViewController alloc] init];
+  vc.view.backgroundColor = UIColor.clearColor;
+  UIButtonConfiguration *config = [UIButtonConfiguration borderedButtonConfiguration];
+  config.title = @"Options";
+  config.image = [UIImage systemImageNamed:@"gearshape.fill"];
+  config.imagePadding = 6;
+  config.cornerStyle = UIButtonConfigurationCornerStyleCapsule;
+  config.contentInsets = NSDirectionalEdgeInsetsMake(8, 14, 8, 14);
+  UIButton *button = [UIButton buttonWithConfiguration:config primaryAction:[UIAction actionWithHandler:^(UIAction *a) {
+    GVShowOverlay();
+  }]];
+  button.alpha = 0.6;  // subtle until looked at / pressed
+  button.accessibilityLabel = @"GalaxyVision options";
+  [button sizeToFit];
+  CGSize size = button.bounds.size;
+  button.frame = CGRectMake(CGRectGetWidth(vc.view.bounds) - size.width - 24, 24, size.width, size.height);
+  button.autoresizingMask = UIViewAutoresizingFlexibleLeftMargin | UIViewAutoresizingFlexibleBottomMargin;
+  [vc.view addSubview:button];
+  window.pill = button;
+  window.rootViewController = vc;
+  window.hidden = NO;
+  sPillWindow = window;
+}
 
 static void GVHideOverlay(void) {
   if (!sOverlayWindow) return;
   sOverlayWindow.hidden = YES;
   sOverlayWindow = nil;
+  sPillWindow.hidden = NO;
   galaxypad_engine_pause(0);
   GalaxyVisionController.shared.inputSuspended = NO;
   for (UIWindow *w in sGameScene.windows) {
-    if (!w.hidden && w != sToastWindow) { [w makeKeyWindow]; break; }
+    if (!w.hidden && w != sToastWindow && w != sPillWindow) { [w makeKeyWindow]; break; }
   }
 }
 
@@ -70,9 +120,15 @@ static void GVShowOverlay(void) {
   if (sOverlayWindow || !sGameScene) return;
   GalaxyVisionController.shared.inputSuspended = YES;
   galaxypad_engine_pause(1);
+  sPillWindow.hidden = YES;
   UIViewController *content = [GVOverlayFactory makeViewControllerOnDisplayChange:^{
     [GalaxyVisionController.shared applyDisplaySettingsNow];
-  } onResume:^{ GVHideOverlay(); }];
+  } onResume:^{ GVHideOverlay(); } onQuit:^{
+    // The player confirmed in the overlay. Unpause so the game loop can see the request, then use the
+    // engine's own "Stop Game" path (the Home menu's Quit). No save happens.
+    GVHideOverlay();
+    galaxypad_engine_quit();
+  }];
   UIWindow *window = [[UIWindow alloc] initWithWindowScene:sGameScene];
   window.windowLevel = UIWindowLevelAlert + 10;
   window.rootViewController = content;
@@ -86,7 +142,7 @@ static void GVShowOverlay(void) {
 // (the game is paused and the process may be suspended before it finishes), and GameData.bin is
 // never written directly. So: remember that the scene lost focus and, when it comes back, remind
 // the player that closing the window does not save.
-static void GVShowSaveToast(void) {
+static void GVShowToast(NSString *text, NSTimeInterval seconds) {
   if (sToastWindow || !sGameScene) return;
   UIWindow *window = [[UIWindow alloc] initWithWindowScene:sGameScene];
   window.windowLevel = UIWindowLevelAlert + 5;
@@ -99,7 +155,7 @@ static void GVShowSaveToast(void) {
   panel.layer.cornerRadius = 20;
   panel.clipsToBounds = YES;
   UILabel *label = [[UILabel alloc] init];
-  label.text = @"Closing the window does not save.\nUse Pause \u203A \u201CSave your progress and quit\u201D to save.";
+  label.text = text;
   label.numberOfLines = 0;
   label.textAlignment = NSTextAlignmentCenter;
   label.textColor = UIColor.whiteColor;
@@ -115,15 +171,33 @@ static void GVShowSaveToast(void) {
   window.rootViewController = vc;
   window.hidden = NO;
   sToastWindow = window;
-  dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(8 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+  dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(seconds * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
     window.hidden = YES;
     if (sToastWindow == window) sToastWindow = nil;
+  });
+}
+
+static void GVShowSaveToast(void) {
+  GVShowToast(@"Closing the window does not save.\nUse Pause \u203A \u201CSave your progress and quit\u201D to save.", 8);
+}
+
+// Once the engine has finished preparing shaders and the game runs, show the Options pill and a
+// short hint about it (the engine's own pause menu has no entry for the launcher options).
+static void GVWaitForGameStart(void) {
+  dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(1 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+    if (galaxypad_engine_started()) {
+      GVShowPill();
+      GVShowToast(@"Options: tap the Options button at the top right,\nor hold Options + Create on the controller.", 7);
+    } else {
+      GVWaitForGameStart();
+    }
   });
 }
 
 static void GVObserveGameScene(UIWindowScene *scene) {
   sGameScene = scene;
   GalaxyVisionController.shared.onOptionsRequested = ^{ GVShowOverlay(); };
+  GVWaitForGameStart();
   NSNotificationCenter *nc = NSNotificationCenter.defaultCenter;
   void (^resigned)(NSNotification *) = ^(NSNotification *n) { sSceneResigned = YES; };
   [nc addObserverForName:UISceneWillDeactivateNotification object:scene queue:NSOperationQueue.mainQueue usingBlock:resigned];
