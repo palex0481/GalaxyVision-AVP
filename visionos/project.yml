@@ -15,6 +15,7 @@ targets:
     platform: visionOS
     sources:
       - path: Sources
+      - path: Resources/Assets.xcassets
     preBuildScripts:
       - name: Package engine framework (strip Licenses, fix Info.plist)
         basedOnDependencyAnalysis: false
@@ -48,6 +49,7 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: com.example.galaxyvision
         DEVELOPMENT_TEAM: ""
         CODE_SIGN_STYLE: Automatic
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         MARKETING_VERSION: "0.1"
         CURRENT_PROJECT_VERSION: "1"
         CLANG_CXX_LANGUAGE_STANDARD: c++20

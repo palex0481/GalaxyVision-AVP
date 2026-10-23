@@ -14,6 +14,7 @@
 		68A6B83A23EFBEBAA13C42F3 /* GalaxyVisionController.mm in Sources */ = {isa = PBXBuildFile; fileRef = 4BACAFC35890EA3401E27C29 /* GalaxyVisionController.mm */; };
 		6B47641DE9CE74950328FB51 /* main.mm in Sources */ = {isa = PBXBuildFile; fileRef = 83D45D20E19019C86E747EAC /* main.mm */; };
 		7D2667BAEBFB03D05CD5A6A1 /* Metal.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 59C063713F25D74D674C471B /* Metal.framework */; };
+		87254B6F68B6790DD8C50B7A /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 5BA56ACBADEFCE5F9A181398 /* Assets.xcassets */; };
 		DC733DB5B2083B6DB9C744BF /* QuartzCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = BE68F1ABBA74EF4A9DF5B41D /* QuartzCore.framework */; };
 		EBDBDC9A2BABCFE90C4572BD /* UniformTypeIdentifiers.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 81A3E315B4A090CBC262A2BF /* UniformTypeIdentifiers.framework */; };
 /* End PBXBuildFile section */
@@ -37,6 +38,7 @@
 		4BACAFC35890EA3401E27C29 /* GalaxyVisionController.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = GalaxyVisionController.mm; sourceTree = "<group>"; };
 		4F1111C9925ABE66F81767D4 /* GameController.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = GameController.framework; path = System/Library/Frameworks/GameController.framework; sourceTree = SDKROOT; };
 		59C063713F25D74D674C471B /* Metal.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Metal.framework; path = System/Library/Frameworks/Metal.framework; sourceTree = SDKROOT; };
+		5BA56ACBADEFCE5F9A181398 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		81A3E315B4A090CBC262A2BF /* UniformTypeIdentifiers.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = UniformTypeIdentifiers.framework; path = System/Library/Frameworks/UniformTypeIdentifiers.framework; sourceTree = SDKROOT; };
 		83D45D20E19019C86E747EAC /* main.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = main.mm; sourceTree = "<group>"; };
 		9EE17E7F1726D3AB3488F241 /* UIKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = UIKit.framework; path = System/Library/Frameworks/UIKit.framework; sourceTree = SDKROOT; };
@@ -65,10 +67,19 @@
 		4041F680ACCFB2E20CAEA115 = {
 			isa = PBXGroup;
 			children = (
+				4ADA6DB190013DE1E52ED6B6 /* Resources */,
 				F4BC593154AACD7A40634DE6 /* Sources */,
 				B4C9D6CB21E102027EF12037 /* Frameworks */,
 				FE4D5F980C5DD7AD6FFAFD93 /* Products */,
 			);
+			sourceTree = "<group>";
+		};
+		4ADA6DB190013DE1E52ED6B6 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				5BA56ACBADEFCE5F9A181398 /* Assets.xcassets */,
+			);
+			path = Resources;
 			sourceTree = "<group>";
 		};
 		B4C9D6CB21E102027EF12037 /* Frameworks */ = {
@@ -111,6 +122,7 @@
 			buildPhases = (
 				ADFD9ECB5C416005010757D3 /* Package engine framework (strip Licenses, fix Info.plist) */,
 				5E57A39EF599A9AB8EE692B8 /* Sources */,
+				7C7DD8D68204604D0DBE2FBE /* Resources */,
 				859E5650481E745B5C2A508E /* Frameworks */,
 				136B05921FD0A1EDD19A121C /* Embed Frameworks */,
 			);
@@ -158,6 +170,17 @@
 			);
 		};
 /* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		7C7DD8D68204604D0DBE2FBE /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				87254B6F68B6790DD8C50B7A /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
 
 /* Begin PBXShellScriptBuildPhase section */
 		ADFD9ECB5C416005010757D3 /* Package engine framework (strip Licenses, fix Info.plist) */ = {
