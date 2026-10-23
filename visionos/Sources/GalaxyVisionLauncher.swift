@@ -344,6 +344,7 @@ private struct GraphicsTab: View {
   @AppStorage(GVKeyAspect) private var aspect = -1
   @AppStorage(GVKeySmoothMotion) private var smoothMotion = false
   @AppStorage(GVKeyViewMode) private var viewMode = "flat"
+  @AppStorage(GVKeyShowFPS) private var showFPS = true
 
   var body: some View {
     NavigationStack {
@@ -370,6 +371,11 @@ private struct GraphicsTab: View {
           Text("Display")
         } footer: {
           Text("Aspect ratio is saved by the game and may need one more start to fully apply. Smooth motion only does something on 120 Hz displays, so it probably has no effect in a headset.")
+        }
+        Section {
+          Toggle("Show FPS counter (testing)", isOn: $showFPS)
+        } footer: {
+          Text("A small frame-rate number in the top-right corner of the game window. In the Stereoscopic window it also shows the eye resolution. Turns on and off right away.")
         }
         if inGame && viewMode == "stereo" {
           StereoSettingsSection(inGame: true, onChange: onDisplayChange)

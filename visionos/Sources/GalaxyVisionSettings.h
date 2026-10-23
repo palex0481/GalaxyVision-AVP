@@ -9,6 +9,7 @@ extern NSString *const GVKeyViewMode;           // String: "flat" (default) or "
 extern NSString *const GVKeyStereoDepth;        // Double 0...2: eye separation scale (1 = default, 0 = no depth)
 extern NSString *const GVKeyStereoResolution;   // Int 540 / 720 / 1080: the stereo window's render height per eye (default 720)
 extern NSString *const GVKeyStereoConvergence;  // Double 400...3000: game units to the zero-parallax plane (default 1200)
+extern NSString *const GVKeyShowFPS;            // Bool: small frame-rate counter in the game window's top-right corner (testing, default on)
 extern NSString *const GVKeyPointerSensitivity; // Double 0.5...2.0, scales pointer speed (default 1.0)
 extern NSString *const GVKeyPointerMode;        // Int: 0 when moved, 1 always, 2 hidden
 extern NSString *const GVKeyGyroAim;            // Bool, PS pads with motion only (default off)
@@ -21,6 +22,7 @@ extern NSString *const GVKeySmoothMotion;       // Bool (only has an effect on >
 
 @interface GalaxyVisionSettings : NSObject
 + (void)registerDefaults;
+@property(class, readonly) BOOL showFPS;
 @property(class, readonly) float pointerSensitivity;
 @property(class, readonly) NSInteger pointerMode;
 @property(class, readonly) BOOL gyroAim;

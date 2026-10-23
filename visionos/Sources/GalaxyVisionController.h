@@ -23,6 +23,7 @@ void galaxypad_engine_input(uint32_t buttons, float stickX, float stickY, int po
 int galaxypad_engine_started(void);
 int galaxypad_engine_game_paused(void);  // 1 while the game's own pause menu is up
 void galaxypad_engine_pause(int paused);
+uint64_t galaxypad_engine_presented_frames(void);
 void galaxypad_engine_quit(void);
 void galaxypad_engine_set_volume(float volume);
 int galaxypad_engine_widescreen(int value);

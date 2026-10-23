@@ -204,6 +204,73 @@ static void GVStartStereo(void) {
   }];
 }
 
+// --- FPS counter (testing) -----------------------------------------------------------------------
+// A small non-interactive label in the top-right corner of the game window (a subview, not a UIWindow, so no
+// glass blur). Updated about twice a second from the game's presented frames: the engine's
+// presented-frame count in the flat window; in the Stereoscopic window the engine presents twice per game
+// step (once per eye), so the right eye's published frames (one per game step) are counted instead, and the
+// eye resolution setting is shown too. Shown while "Show FPS counter (testing)" is on (Graphics tab).
+static UILabel *sFPSLabel;
+static NSTimer *sFPSTimer;
+static uint64_t sFPSLastCount;
+static CFTimeInterval sFPSLastTime;
+static BOOL sFPSLastStereo;
+
+static uint64_t GVFPSCount(BOOL stereo) {
+  if (!stereo) return galaxypad_engine_presented_frames();
+  uint64_t sequence = 0;
+  [GVStereoEngine latestSlotForEye:1 sequence:&sequence];
+  return sequence;
+}
+
+static void GVFPSTick(void) {
+  UIWindow *gameWindow = GVGameWindow();
+  UIView *parent = gameWindow.rootViewController ? gameWindow.rootViewController.view : gameWindow;
+  if (!parent || !galaxypad_engine_started() || !GalaxyVisionSettings.showFPS) {
+    [sFPSLabel removeFromSuperview];
+    sFPSLastTime = 0;
+    return;
+  }
+  if (!sFPSLabel) {
+    sFPSLabel = [[UILabel alloc] init];
+    sFPSLabel.userInteractionEnabled = NO;
+    sFPSLabel.textColor = [UIColor colorWithWhite:1.0 alpha:0.75];
+    sFPSLabel.backgroundColor = [UIColor colorWithWhite:0.0 alpha:0.35];
+    sFPSLabel.layer.cornerRadius = 8;
+    sFPSLabel.clipsToBounds = YES;
+    sFPSLabel.textAlignment = NSTextAlignmentCenter;
+    sFPSLabel.font = [UIFont monospacedDigitSystemFontOfSize:18 weight:UIFontWeightSemibold];
+    sFPSLabel.autoresizingMask = UIViewAutoresizingFlexibleLeftMargin | UIViewAutoresizingFlexibleBottomMargin;
+  }
+  const BOOL stereo = GalaxyVisionSettings.stereoSelected && sStereoContent && GVStereoEngine.status == 1;
+  const uint64_t count = GVFPSCount(stereo);
+  const CFTimeInterval now = CACurrentMediaTime();
+  if (sFPSLabel.superview != parent) [parent addSubview:sFPSLabel];  // (an open overlay was added later, so stays above)
+  if (sFPSLastTime > 0 && stereo == sFPSLastStereo && now > sFPSLastTime && count >= sFPSLastCount) {
+    const double fps = (double)(count - sFPSLastCount) / (now - sFPSLastTime);
+    NSString *text = [NSString stringWithFormat:@"%.0f fps", fps];
+    if (stereo) {
+      const NSInteger h = GalaxyVisionSettings.stereoResolution;
+      text = [text stringByAppendingFormat:@" \u00B7 eye %ldx%ld", (long)((h * 16 + 4) / 9), (long)h];
+    }
+    sFPSLabel.text = text;
+    [sFPSLabel sizeToFit];
+    CGRect frame = sFPSLabel.frame;
+    frame.size.width += 16;
+    frame.size.height += 6;
+    frame.origin = CGPointMake(CGRectGetMaxX(parent.bounds) - frame.size.width - 16, 16);
+    sFPSLabel.frame = frame;
+  }
+  sFPSLastCount = count;
+  sFPSLastTime = now;
+  sFPSLastStereo = stereo;
+}
+
+static void GVStartFPSCounter(void) {
+  if (sFPSTimer) return;
+  sFPSTimer = [NSTimer scheduledTimerWithTimeInterval:0.5 repeats:YES block:^(NSTimer *timer) { GVFPSTick(); }];
+}
+
 static void GVObserveGameScene(UIWindowScene *scene) {
   sGameScene = scene;
   GalaxyVisionController.shared.onOptionsRequested = ^{ GVShowOverlay(); };
@@ -235,6 +302,7 @@ static void GVHandOffToEngine(UIScene *scene, UISceneSession *session, UISceneCo
   [GalaxyVisionController.shared start];
   if ([scene isKindOfClass:UIWindowScene.class]) GVObserveGameScene((UIWindowScene *)scene);
   if (GalaxyVisionSettings.stereoSelected) GVStartStereo();
+  GVStartFPSCounter();
 }
 
 - (void)scene:(UIScene *)scene willConnectToSession:(UISceneSession *)session options:(UISceneConnectionOptions *)options {

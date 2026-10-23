@@ -90,3 +90,9 @@ Depth and convergence sliders: `gv.stereoDepth` (0-2, default 1) and `gv.stereoC
 - Failure falls back to flat with a toast. Trace log: `Library/Caches/galaxyvision-trace.log`.
 - Known: the shear sign / depth direction is unverified on device; home menu / RmlUi overlays only render to the
   flat window (hidden behind the stereo view); no HUD depth option; ImGui not in the eye images.
+
+## FPS counter (testing)
+- `main.mm` (`GVFPSTick`): a small non-interactive `UILabel` subview of the game window's root view (top-right; not a
+  UIWindow), refreshed every 0.5 s. Flat: delta of `galaxypad_engine_presented_frames()`. Stereo: that counter runs at
+  2x (left eye present-between + right eye present), so the right eye's published sequence is used (one per game step),
+  plus the eye resolution. Toggle "Show FPS counter (testing)" in the Graphics tab (`gv.showFPS`, default on), live.
