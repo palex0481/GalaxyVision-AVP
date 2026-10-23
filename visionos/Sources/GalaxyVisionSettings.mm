@@ -6,6 +6,7 @@
 NSString *const GVKeyViewMode = @"gv.viewMode";
 NSString *const GVKeyStereoDepth = @"gv.stereoDepth";
 NSString *const GVKeyStereoConvergence = @"gv.stereoConvergence";
+NSString *const GVKeyStereoSharp = @"gv.stereoSharp";
 NSString *const GVKeyStereoResolution = @"gv.stereoResolution";
 NSString *const GVKeyShowFPS = @"gv.showFPS";
 NSString *const GVKeyPointerSensitivity = @"gv.pointerSensitivity";
@@ -27,6 +28,7 @@ static NSUserDefaults *Defaults(void) { return NSUserDefaults.standardUserDefaul
     GVKeyStereoDepth: @1.0,
     GVKeyStereoConvergence: @1200.0,
     GVKeyStereoResolution: @720,
+    GVKeyStereoSharp: @YES,
     GVKeyShowFPS: @YES,
     GVKeyPointerSensitivity: @1.0,
     GVKeyPointerMode: @0,
@@ -67,6 +69,7 @@ static NSUserDefaults *Defaults(void) { return NSUserDefaults.standardUserDefaul
   const NSInteger v = [Defaults() integerForKey:GVKeyStereoResolution];
   return (v == 540 || v == 720 || v == 1080) ? v : 720;
 }
++ (BOOL)stereoSharp { return [Defaults() boolForKey:GVKeyStereoSharp]; }
 + (float)stereoConvergence {
   const double v = [Defaults() doubleForKey:GVKeyStereoConvergence];
   return (v >= 400.0 && v <= 3000.0) ? (float)v : 1200.0f;

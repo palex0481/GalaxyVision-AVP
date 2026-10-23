@@ -8,6 +8,7 @@ NS_ASSUME_NONNULL_BEGIN
 extern NSString *const GVKeyViewMode;           // String: "flat" (default) or "stereo" (Stereoscopic window, beta)
 extern NSString *const GVKeyStereoDepth;        // Double 0...2: eye separation scale (1 = default, 0 = no depth)
 extern NSString *const GVKeyStereoResolution;   // Int 540 / 720 / 1080: the stereo window's render height per eye (default 720)
+extern NSString *const GVKeyStereoSharp;        // Bool: sharp upscaling (MetalFX) of the stereo eye images at Low / Medium (default on)
 extern NSString *const GVKeyStereoConvergence;  // Double 400...3000: game units to the zero-parallax plane (default 1200)
 extern NSString *const GVKeyShowFPS;            // Bool: small frame-rate counter in the game window's top-right corner (testing, default on)
 extern NSString *const GVKeyPointerSensitivity; // Double 0.5...2.0, scales pointer speed (default 1.0)
@@ -35,6 +36,7 @@ extern NSString *const GVKeySmoothMotion;       // Bool (only has an effect on >
 @property(class, readonly) BOOL stereoSelected;      // view mode is the Stereoscopic window (beta)
 @property(class, readonly) float stereoDepth;
 @property(class, readonly) float stereoConvergence;
+@property(class, readonly) BOOL stereoSharp;
 @property(class, readonly) NSInteger stereoResolution;  // eye render height: 540 Low, 720 Medium (default), 1080 High
 // Exports settings that must exist before the engine starts (PETARI_RENDER_SCALE).
 + (void)applyStartupEnvironment;

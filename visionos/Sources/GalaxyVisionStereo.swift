@@ -14,6 +14,7 @@ import RealityKit
 import Metal
 import QuartzCore
 import IOSurface
+import MetalFX
 
 @MainActor
 final class GVStereoRenderer: NSObject, ObservableObject {
@@ -27,6 +28,15 @@ final class GVStereoRenderer: NSObject, ObservableObject {
   private var queue: MTLCommandQueue?
   private var colors: [LowLevelTexture] = []
   private var eyes: [[MTLTexture]] = []  // [eye][slot]
+  // Sharp upscaling (MetalFX): the same IOSurfaces as plain bgra8Unorm (the data is already display-encoded, so the
+  // scaler runs in its perceptual mode on non-sRGB formats), per eye a private input of the picture's size, a
+  // scaler and a private 1920x1080 output; the output is copied through an sRGB view into the LowLevelTexture.
+  private var rawEyes: [[MTLTexture]] = []
+  private var sharpOutputs: [MTLTexture] = []
+  private var sharpOutputViews: [MTLTexture] = []
+  private var sharpInputs: [MTLTexture?] = [nil, nil]
+  private var sharpScalers: [MTLFXSpatialScaler?] = [nil, nil]
+  private var sharpSize = (width: 0, height: 0)
   private var lastSequence: [UInt64] = [0, 0]
   private var pending: MTLCommandBuffer?
   private var displayLink: CADisplayLink?
@@ -59,16 +69,86 @@ final class GVStereoRenderer: NSObject, ObservableObject {
         textures.append(texture)
       }
       eyes.append(textures)
+      // MetalFX needs raw (non-sRGB) views of the same memory; a failure here only disables sharp upscaling.
+      var raw: [MTLTexture] = []
+      for slot in 0..<Self.slots {
+        guard let surface = GVStereoEngine.surface(forEye: eye, slot: slot) else { break }
+        let rawDescriptor = MTLTextureDescriptor.texture2DDescriptor(
+          pixelFormat: .bgra8Unorm, width: Self.width, height: Self.height, mipmapped: false)
+        rawDescriptor.usage = .shaderRead
+        rawDescriptor.storageMode = .shared
+        guard let texture = device.makeTexture(descriptor: rawDescriptor, iosurface: surface, plane: 0) else { break }
+        raw.append(texture)
+      }
+      rawEyes.append(raw)
       colors.append(try LowLevelTexture(descriptor: .init(
         pixelFormat: .bgra8Unorm_srgb, width: Self.width, height: Self.height,
         depth: 1, mipmapLevelCount: 1, textureUsage: [.shaderRead, .renderTarget])))
     }
+    if !prepareSharp(device) { disableSharp("MetalFX is not available here, or its textures could not be made.") }
     var material = try await ShaderGraphMaterial(named: "/Root/Material", from: "NativeStereo", in: .main)
     try material.setParameter(name: "leftEye", value: .textureResource(try await TextureResource(from: colors[0])))
     try material.setParameter(name: "rightEye", value: .textureResource(try await TextureResource(from: colors[1])))
     screen.model = ModelComponent(mesh: .generatePlane(width: 1, height: Self.aspect), materials: [material])
     screen.isEnabled = false  // never show uninitialized texture contents
     prepared = true
+  }
+
+  /// The eye outputs for MetalFX (private bgra8Unorm, plus an sRGB view of each). False if MetalFX or the textures aren't available.
+  private func prepareSharp(_ device: MTLDevice) -> Bool {
+    guard MTLFXSpatialScalerDescriptor.supportsDevice(device), rawEyes.count == 2,
+          rawEyes.allSatisfy({ $0.count == Self.slots }) else { return false }
+    for _ in 0..<2 {
+      let descriptor = MTLTextureDescriptor.texture2DDescriptor(
+        pixelFormat: .bgra8Unorm, width: Self.width, height: Self.height, mipmapped: false)
+      // renderTarget and shaderWrite cover what a MetalFX scaler asks of its output (checked again when it is created).
+      descriptor.usage = [.shaderRead, .shaderWrite, .renderTarget, .pixelFormatView]
+      descriptor.storageMode = .private
+      guard let output = device.makeTexture(descriptor: descriptor),
+            let view = output.makeTextureView(pixelFormat: .bgra8Unorm_srgb) else { return false }
+      sharpOutputs.append(output)
+      sharpOutputViews.append(view)
+    }
+    return true
+  }
+
+  private func disableSharp(_ reason: String) {
+    guard !GVStereoEngine.sharpFailed else { return }
+    fputs("GalaxyVision stereo: sharp upscaling (MetalFX) off: \(reason)\n", stderr)
+    GVStereoEngine.sharpFailed = true
+    GVStereoEngine.sharpActive = false
+    GVStereoEngine.applySavedSettings()  // the engine goes back to scaling across the whole eye image
+  }
+
+  /// Makes the per-eye scalers and inputs for a picture size (once per size). False if MetalFX can't do it.
+  private func configureSharp(width: Int, height: Int) -> Bool {
+    if sharpSize == (width, height), sharpScalers[0] != nil, sharpScalers[1] != nil { return true }
+    guard let device, sharpOutputs.count == 2 else { return false }
+    let descriptor = MTLFXSpatialScalerDescriptor()
+    descriptor.colorTextureFormat = .bgra8Unorm
+    descriptor.outputTextureFormat = .bgra8Unorm
+    descriptor.inputWidth = width
+    descriptor.inputHeight = height
+    descriptor.outputWidth = Self.width
+    descriptor.outputHeight = Self.height
+    descriptor.colorProcessingMode = .perceptual
+    var scalers: [MTLFXSpatialScaler?] = [nil, nil]
+    var inputs: [MTLTexture?] = [nil, nil]
+    for eye in 0..<2 {
+      guard let scaler = descriptor.makeSpatialScaler(device: device) else { return false }
+      guard scaler.outputTextureUsage.isSubset(of: sharpOutputs[eye].usage) else { return false }
+      let input = MTLTextureDescriptor.texture2DDescriptor(
+        pixelFormat: .bgra8Unorm, width: width, height: height, mipmapped: false)
+      input.usage = scaler.colorTextureUsage.union(.shaderRead)
+      input.storageMode = .private
+      guard let texture = device.makeTexture(descriptor: input) else { return false }
+      scalers[eye] = scaler
+      inputs[eye] = texture
+    }
+    sharpScalers = scalers
+    sharpInputs = inputs
+    sharpSize = (width, height)
+    return true
   }
 
   /// Keep the game's 16:9 framing; extra window space is letterboxed.
@@ -86,6 +166,7 @@ final class GVStereoRenderer: NSObject, ObservableObject {
   }
 
   func stop() {
+    GVStereoEngine.sharpActive = false
     displayLink?.invalidate()
     displayLink = nil
     pending?.waitUntilCompleted()
@@ -108,14 +189,56 @@ final class GVStereoRenderer: NSObject, ObservableObject {
     var leftSequence: UInt64 = 0
     let leftSlot = GVStereoEngine.latestSlot(forEye: 0, sequence: &leftSequence)
     guard leftSlot >= 0, let commandBuffer = queue.makeCommandBuffer() else { return }
-    lastSequence = [leftSequence, rightSequence]
     let slots = [leftSlot, rightSlot]
+    // The pictures' size: the whole 1920x1080 image (plain path), or a smaller top-left rectangle when the engine
+    // draws at the render size for MetalFX. Both eyes of a pair are drawn together with the same size.
+    var pictureWidth = 0, pictureHeight = 0
+    var otherWidth = 0, otherHeight = 0
+    _ = GVStereoEngine.size(forEye: 1, slot: rightSlot, width: &pictureWidth, height: &pictureHeight)
+    _ = GVStereoEngine.size(forEye: 0, slot: leftSlot, width: &otherWidth, height: &otherHeight)
+    let scaled = pictureWidth < Self.width || pictureHeight < Self.height
+    if scaled {
+      // A picture that is not full size can only be shown through MetalFX; otherwise wait for the plain path's pictures.
+      guard otherWidth == pictureWidth, otherHeight == pictureHeight,
+            pictureWidth > 0, pictureHeight > 0, !GVStereoEngine.sharpFailed else {
+        if GVStereoEngine.sharpFailed { lastSequence = [leftSequence, rightSequence] }
+        return
+      }
+      if !configureSharp(width: pictureWidth, height: pictureHeight) {
+        disableSharp("the scaler could not be created for \(pictureWidth)x\(pictureHeight).")
+        lastSequence = [leftSequence, rightSequence]
+        return
+      }
+    }
+    lastSequence = [leftSequence, rightSequence]
     for eye in 0..<2 {
       let destination = colors[eye].replace(using: commandBuffer)
-      guard let blit = commandBuffer.makeBlitCommandEncoder() else { continue }
-      blit.copy(from: eyes[eye][slots[eye]], to: destination)
-      blit.endEncoding()
+      if scaled, let scaler = sharpScalers[eye], let input = sharpInputs[eye] {
+        // 1. the picture's rectangle into the scaler's private input, 2. MetalFX up to 1920x1080,
+        // 3. the result (through an sRGB view) into the RealityKit texture.
+        if let crop = commandBuffer.makeBlitCommandEncoder() {
+          crop.copy(from: rawEyes[eye][slots[eye]], sourceSlice: 0, sourceLevel: 0,
+                    sourceOrigin: MTLOrigin(x: 0, y: 0, z: 0),
+                    sourceSize: MTLSize(width: pictureWidth, height: pictureHeight, depth: 1),
+                    to: input, destinationSlice: 0, destinationLevel: 0,
+                    destinationOrigin: MTLOrigin(x: 0, y: 0, z: 0))
+          crop.endEncoding()
+        }
+        scaler.colorTexture = input
+        scaler.inputContentWidth = pictureWidth
+        scaler.inputContentHeight = pictureHeight
+        scaler.outputTexture = sharpOutputs[eye]
+        scaler.encode(commandBuffer: commandBuffer)
+        if let blit = commandBuffer.makeBlitCommandEncoder() {
+          blit.copy(from: sharpOutputViews[eye], to: destination)
+          blit.endEncoding()
+        }
+      } else if let blit = commandBuffer.makeBlitCommandEncoder() {
+        blit.copy(from: eyes[eye][slots[eye]], to: destination)
+        blit.endEncoding()
+      }
     }
+    if GVStereoEngine.sharpActive != scaled { GVStereoEngine.sharpActive = scaled }
     commandBuffer.commit()
     pending = commandBuffer
     frames += 1

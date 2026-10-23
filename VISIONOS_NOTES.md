@@ -96,3 +96,15 @@ Depth and convergence sliders: `gv.stereoDepth` (0-2, default 1) and `gv.stereoC
   UIWindow), refreshed every 0.5 s. Flat: delta of `galaxypad_engine_presented_frames()`. Stereo: that counter runs at
   2x (left eye present-between + right eye present), so the right eye's published sequence is used (one per game step),
   plus the eye resolution. Toggle "Show FPS counter (testing)" in the Graphics tab (`gv.showFPS`, default on), live.
+
+## Sharp upscaling (MetalFX) for the stereo window
+- Setting `gv.stereoSharp` ("Sharp upscaling (MetalFX)", stereo settings in the View tab and in-game Graphics tab, default on,
+  live). Only below High (Low 960x540 / Medium 1280x720); High and any failure use the plain path (engine scales across the image).
+- Engine (`stereo_bridge.cpp`, `galaxypad_engine_stereo_set_rect` / `_slot_size`): with a rect height set, the XFB is drawn 1:1
+  into the top-left 16:9 rectangle of the 1920x1080 eye IOSurface (no scale-up), and each slot publishes its picture size.
+- App (`GalaxyVisionStereo.swift`): per tick, if the pair's picture is smaller than the image: blit the rectangle from a raw
+  (`bgra8Unorm`) view of the IOSurface into a private input texture of exactly that size, `MTLFXSpatialScaler` (perceptual mode,
+  the data is already display-encoded) to a private 1920x1080 `bgra8Unorm` output, blit it through an sRGB view into the
+  LowLevelTexture. Scalers are cached per size, one per eye. Frames that are sub-sized while sharp is off/failed are skipped
+  (never shown unscaled). Any failure sets `GVStereoEngine.sharpFailed` for the run and the engine returns to the plain path.
+- The FPS counter shows "sharp" while MetalFX pictures are being shown. Untested on device.

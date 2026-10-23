@@ -252,6 +252,7 @@ static void GVFPSTick(void) {
     if (stereo) {
       const NSInteger h = GalaxyVisionSettings.stereoResolution;
       text = [text stringByAppendingFormat:@" \u00B7 eye %ldx%ld", (long)((h * 16 + 4) / 9), (long)h];
+      if (GVStereoEngine.sharpActive) text = [text stringByAppendingString:@" sharp"];
     }
     sFPSLabel.text = text;
     [sFPSLabel sizeToFit];

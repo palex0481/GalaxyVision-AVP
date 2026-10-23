@@ -16,6 +16,13 @@ NS_ASSUME_NONNULL_BEGIN
 + (nullable IOSurfaceRef)surfaceForEye:(NSInteger)eye slot:(NSInteger)slot CF_RETURNS_NOT_RETAINED;
 // The newest finished slot of the eye (-1 if none); `sequence` increments with every finished frame.
 + (NSInteger)latestSlotForEye:(NSInteger)eye sequence:(uint64_t *)sequence;
+// The size of the picture in the slot (the top-left rectangle of the 1920x1080 image; the whole image unless the
+// engine draws at the render size for MetalFX). NO if there is no such slot.
++ (BOOL)sizeForEye:(NSInteger)eye slot:(NSInteger)slot width:(NSInteger *)width height:(NSInteger *)height;
+// Sharp upscaling (MetalFX): `sharpFailed` is set (for the rest of the run) when MetalFX cannot be used, so the
+// plain path takes over; `sharpActive` is true while the stereo window shows MetalFX-scaled pictures.
+@property(class) BOOL sharpFailed;
+@property(class) BOOL sharpActive;
 // Turns the per-eye rendering on or off and sets the tuning (also live, from the options screen).
 + (void)applyEnabled:(BOOL)enabled depth:(float)depth convergence:(float)convergence;
 // Applies the saved depth / convergence settings; on only if the bridge is ready.
