@@ -316,7 +316,7 @@ private struct ControlsTab: View {
           Text("On: Circle and the N64 B button act like A. Off: they act as the Wii B button, which backs out of menus and shoots Star Bits.")
         }
         Section("Layout") {
-          layoutRow("Left stick", "Move")
+          layoutRow("Left stick", "Move; also steers Ray surfing and Star Ball rolling")
           layoutRow("Cross / A", "Jump, swim, confirm, pull stars")
           layoutRow("Circle / B", bJumps ? "Jump, swim" : "Back, shoot Star Bits")
           layoutRow("Square / Triangle", "Spin, pick up, throw")
