@@ -9,14 +9,22 @@
 //     IOSurfaces blitted into two LowLevelTextures and shown by the NativeStereo ShaderGraph material.
 // "Screen depth (3D)" off: the engine draws each step once (depth 0 = mono) and both eyes see the same picture.
 // On: the engine draws both eyes and the screen shows real stereo depth.
+//
+// 3D portal window (beta, the same space in the mixed style): the passthrough room stays visible and the screen is a
+// window hanging in it. ARKit's device anchor gives both eyes' real positions; the engine draws each eye through the
+// window's rectangle from that position (an off-axis view, Stereo.cpp), so moving your head shows around the edges of
+// the picture, like looking through a real window into a small world. See GVPortalTracker.
 // The SDL game window keeps running (it paces the engine and hosts the options overlay), shrunk to a small panel
 // while the space is open and enlarged again while the options are up.
 import SwiftUI
 import RealityKit
 import UIKit
+import ARKit
+import simd
 
 final class GVImmersiveModel: ObservableObject {
   @Published var isOpen = false
+  var portal = false  // set before the space opens: mixed style and the window instead of the sky
 }
 
 @objc(GVImmersive)
@@ -30,9 +38,18 @@ final class GVImmersive: NSObject {
 
   @objc static var isOpen: Bool { model.isOpen }
 
+  /// Mixed (the room stays visible) for the 3D portal window, full for the space; read when the space opens.
+  static var styleBinding: Binding<any ImmersionStyle> {
+    Binding<any ImmersionStyle>(get: {
+      let style: any ImmersionStyle = model.portal ? MixedImmersionStyle.mixed as any ImmersionStyle : FullImmersionStyle.full as any ImmersionStyle
+      return style
+    }, set: { _ in })
+  }
+
   /// Asks visionOS to open the space. `onError` runs on the main thread if it cannot (or the screen cannot start).
   @objc(openWithErrorHandler:) static func open(onError: @escaping (String) -> Void) {
     errorHandler = onError
+    model.portal = GalaxyVisionSettings.portalSelected
     guard let request = UISceneSessionActivationRequest(hostingDelegateClass: GVImmersiveSceneDelegate.self, id: spaceID) else {
       onError("the immersive space request could not be created.")
       return
@@ -86,7 +103,7 @@ final class GVImmersiveSceneDelegate: UIResponder, UIHostingSceneDelegate {
     ImmersiveSpace(id: GVImmersive.spaceID) {
       GVImmersiveView()
     }
-    .immersionStyle(selection: .constant(.full), in: .full)
+    .immersionStyle(selection: GVImmersive.styleBinding, in: .mixed, .full)
   }
 }
 
@@ -104,21 +121,23 @@ struct GVImmersivePanel: View {
   @ObservedObject private var model = GVImmersive.model
   let onEnter: () -> Void
   let onFlat: () -> Void
+  private let portal = GalaxyVisionSettings.portalSelected
 
   var body: some View {
     VStack(spacing: 14) {
-      Image(systemName: "sparkles").font(.largeTitle).foregroundStyle(.white)
-      Text("Immersive space (beta)").font(.title3.bold()).foregroundStyle(.white)
+      Image(systemName: portal ? "window.casement" : "sparkles").font(.largeTitle).foregroundStyle(.white)
+      Text(portal ? "3D portal window (beta)" : "Immersive space (beta)").font(.title3.bold()).foregroundStyle(.white)
       if model.isOpen {
-        Text("The game is on the big screen in space. Pause and press R1 / RB for the options; this window grows back for them.")
+        Text(portal ? "The game is in the 3D window in your room. Move your head to look around inside it. Pause and press R1 / RB for the options; this window grows back for them."
+                    : "The game is on the big screen in space. Pause and press R1 / RB for the options; this window grows back for them.")
           .font(.footnote).multilineTextAlignment(.center).foregroundStyle(.white.opacity(0.8))
-        Button("Exit immersive space") { GVImmersive.close() }
+        Button(portal ? "Exit 3D portal window" : "Exit immersive space") { GVImmersive.close() }
           .buttonStyle(.borderedProminent)
       } else {
-        Text("The immersive space is closed. The game keeps running.")
+        Text(portal ? "The 3D portal window is closed. The game keeps running." : "The immersive space is closed. The game keeps running.")
           .font(.footnote).multilineTextAlignment(.center).foregroundStyle(.white.opacity(0.8))
         HStack {
-          Button("Enter immersive space") { onEnter() }.buttonStyle(.borderedProminent)
+          Button(portal ? "Open 3D portal window" : "Enter immersive space") { onEnter() }.buttonStyle(.borderedProminent)
           Button("Use the flat window") { onFlat() }
         }
       }
@@ -130,7 +149,13 @@ struct GVImmersivePanel: View {
 }
 
 struct GVImmersiveView: View {
+  private let portal = GVImmersive.model.portal
   @StateObject private var renderer = GVStereoRenderer()
+  @StateObject private var tracker = GVPortalTracker()
+  @State private var updates: EventSubscription?
+  @AppStorage(GVKeyPortalSize) private var portalSize = 1.2
+  @AppStorage(GVKeyPortalDistance) private var portalDistance = 1.5
+  @AppStorage(GVKeyStereoDepth) private var eyeDepth = 1.0
   @AppStorage(GVKeyImmersiveSize) private var size = 6.0
   @AppStorage(GVKeyImmersiveDistance) private var distance = 3.5
   @Environment(\.dismissImmersiveSpace) private var dismissImmersiveSpace
@@ -142,12 +167,30 @@ struct GVImmersiveView: View {
       content.add(world)
       world.addChild(renderer.screen)
       renderer.screen.addChild(GVSpaceScene.bezel())
-      world.addChild(GVSpaceScene.starBits())
+      if portal {
+        // Every frame: read the head, move the window to its place, tell the engine where the eyes are.
+        updates = content.subscribe(to: SceneEvents.Update.self) { _ in
+          MainActor.assumeIsolated {
+            tracker.width = Float(portalSize)
+            tracker.distance = Float(portalDistance)
+            tracker.depthScale = Float(eyeDepth)
+            tracker.update(window: renderer.screen, renderer: renderer)
+          }
+        }
+      } else {
+        world.addChild(GVSpaceScene.starBits())
+      }
       place()
     } update: { _ in
       place()
     }
-    .task { await buildSky() }
+    .task { if !portal { await buildSky() } }
+    .task {
+      guard portal else { return }
+      do { try await tracker.start() } catch {
+        GVImmersive.fail("head tracking could not start (\(error.localizedDescription)).")
+      }
+    }
     .task {
       do {
         try await renderer.prepare()
@@ -170,6 +213,9 @@ struct GVImmersiveView: View {
     }
     .onDisappear {
       renderer.stop()
+      tracker.stop()
+      updates?.cancel()
+      updates = nil
       GVImmersive.dismissAction = nil
       GVImmersive.model.isOpen = false
       GVImmersive.spaceStateChanged()
@@ -178,6 +224,7 @@ struct GVImmersiveView: View {
 
   /// The screen is straight ahead at eye height; `size` is its width in metres, `distance` how far away.
   private func place() {
+    if portal { return }  // the portal window is placed every frame from the head's position
     renderer.fit(width: Float(size), height: Float(size))
     renderer.screen.position = SIMD3<Float>(0, 1.5, -Float(distance))
   }
@@ -190,6 +237,64 @@ struct GVImmersiveView: View {
     material.faceCulling = .none
     let sky = ModelEntity(mesh: .generateSphere(radius: 100), materials: [material])
     world.addChild(sky)
+  }
+}
+
+/// The 3D portal window's head tracking and placement. The window is placed once, in front of where you are when it opens
+/// (straight ahead at eye height, upright, facing you), and then stays put in the room. Every frame the device anchor
+/// gives both eye positions; they are turned into the window's own space (metres, origin at its centre, +x right, +y up,
+/// +z toward you) and handed to the engine, which draws each eye through the window's rectangle.
+@MainActor
+final class GVPortalTracker: ObservableObject {
+  private let session = ARKitSession()
+  private let provider = WorldTrackingProvider()
+  private var origin: SIMD3<Float>?   // where the head was when the window opened
+  private var heading = SIMD3<Float>(0, 0, -1)
+  var width: Float = 1.2
+  var distance: Float = 1.5
+  var depthScale: Float = 1
+  private let eyeSeparation: Float = 0.063
+
+  func start() async throws {
+    origin = nil
+    try await session.run([provider])
+  }
+
+  func stop() {
+    session.stop()
+    origin = nil
+  }
+
+  func update(window: Entity, renderer: GVStereoRenderer) {
+    guard provider.state == .running,
+          let anchor = provider.queryDeviceAnchor(atTimestamp: CACurrentMediaTime() + 0.025), anchor.isTracked else { return }
+    let device = anchor.originFromAnchorTransform
+    let head = SIMD3<Float>(device.columns.3.x, device.columns.3.y, device.columns.3.z)
+    if origin == nil {
+      var ahead = SIMD3<Float>(-device.columns.2.x, 0, -device.columns.2.z)
+      if simd_length(ahead) < 0.05 { ahead = SIMD3<Float>(0, 0, -1) }
+      heading = simd_normalize(ahead)
+      origin = head
+    }
+    guard let origin else { return }
+    let centre = SIMD3<Float>(origin.x + heading.x * distance, origin.y, origin.z + heading.z * distance)
+    let zAxis = -heading                                   // toward the viewer
+    let yAxis = SIMD3<Float>(0, 1, 0)
+    let xAxis = simd_cross(yAxis, zAxis)
+    window.position = centre
+    window.orientation = simd_quatf(simd_float3x3(columns: (xAxis, yAxis, zAxis)))
+    renderer.fit(width: width, height: width)
+
+    func eye(_ side: Float) -> SIMD3<Float> {
+      let p = device * SIMD4<Float>(side * eyeSeparation * 0.5, 0, 0, 1)
+      let d = SIMD3<Float>(p.x, p.y, p.z) - centre
+      return SIMD3<Float>(simd_dot(d, xAxis), simd_dot(d, yAxis), simd_dot(d, zAxis))
+    }
+    let left = eye(-1), right = eye(1)
+    let mid = (left + right) * 0.5
+    let l = mid + (left - mid) * depthScale, r = mid + (right - mid) * depthScale
+    let six: [Float] = [l.x, l.y, l.z, r.x, r.y, r.z]
+    six.withUnsafeBufferPointer { GVStereoEngine.setPortalEyes($0.baseAddress!) }
   }
 }
 

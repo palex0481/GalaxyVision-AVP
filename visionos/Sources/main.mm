@@ -168,7 +168,7 @@ static void GVStereoFailed(NSString *message) {
     [sStereoContent removeFromParentViewController];
     sStereoContent = nil;
   }
-  const BOOL wasImmersive = sImmersivePanel != nil || GalaxyVisionSettings.immersiveSelected;
+  const BOOL wasImmersive = sImmersivePanel != nil || GalaxyVisionSettings.spaceSelected;
   if (sImmersivePanel) {
     [GVImmersive close];
     [sImmersivePanel willMoveToParentViewController:nil];
@@ -178,7 +178,7 @@ static void GVStereoFailed(NSString *message) {
   }
   fprintf(stderr, "GalaxyVision stereo: failed: %s\n", message.UTF8String);
   GVShowToast([NSString stringWithFormat:@"%@ couldn\u2019t start:\n%@\nThe flat window stays in use.",
-               wasImmersive ? @"Immersive space" : @"Stereoscopic window", message], 12);
+               wasImmersive ? (GalaxyVisionSettings.portalSelected ? @"3D portal window" : @"Immersive space") : @"Stereoscopic window", message], 12);
 }
 
 static void GVInstallStereoView(void) {
@@ -241,7 +241,7 @@ static void GVStartStereo(void) {
       [timer invalidate];
       sStereoTimer = nil;
       [GVStereoEngine applySavedSettings];  // the engine starts drawing both eyes
-      if (GalaxyVisionSettings.immersiveSelected) GVInstallImmersive();
+      if (GalaxyVisionSettings.spaceSelected) GVInstallImmersive();
       else GVInstallStereoView();
     } else if (status == -1) {
       GVStereoFailed(GVStereoEngine.error);
@@ -427,6 +427,9 @@ static void GVGlowTick(void) {
     for (int i = 0; i < 4; ++i) sGlowEdges[i] = GVMakeGlowEdge(sGlowView);
     memset(sGlowSmooth, 0, sizeof sGlowSmooth);
     sGlowSequenceTime = CACurrentMediaTime();
+    fprintf(stderr, "GalaxyVision glow: on (metal view %s in %s, frame %.0fx%.0f, window %.0fx%.0f)\n", NSStringFromClass(metal.class).UTF8String,
+            NSStringFromClass(parent.class).UTF8String, metal.bounds.size.width, metal.bounds.size.height, parent.bounds.size.width,
+            parent.bounds.size.height);
   }
   if (!sGlowEngineOn) {
     galaxypad_engine_glow_enable(1);
@@ -442,6 +445,16 @@ static void GVGlowTick(void) {
     sGlowSequenceTime = now;
   }
   const BOOL stale = sequence == 0 || now - sGlowSequenceTime > 0.7;
+  // Trace (testing): one line about every 5 s while the glow is on, so the log shows whether the sampler delivers colours.
+  static int sGlowTraceTicks;
+  if (++sGlowTraceTicks >= 100) {
+    sGlowTraceTicks = 0;
+    int sum = 0;
+    for (int i = 0; i < kGlowCells * 4 * 3; ++i) sum += rgb[i];
+    fprintf(stderr, "GalaxyVision glow: samples %llu, last sample %.1f s ago, mean colour %d/255, inner picture %.0fx%.0f%s\n",
+            (unsigned long long)sequence, now - sGlowSequenceTime, sum / (kGlowCells * 4 * 3), sGlowMetalView.frame.size.width,
+            sGlowMetalView.frame.size.height, stale ? " (no samples: fading to black)" : "");
+  }
   for (int i = 0; i < kGlowCells * 4 * 3; ++i) {
     const float target = stale ? 0.0f : rgb[i] / 255.0f;
     sGlowSmooth[i] += (target - sGlowSmooth[i]) * 0.35f;

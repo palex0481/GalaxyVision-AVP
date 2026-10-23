@@ -6,6 +6,8 @@ extern "C" {
 int galaxypad_engine_started(void);
 void galaxypad_engine_stereo_configure(int enabled, float depth, float convergence);
 void galaxypad_engine_stereo_open(int open);
+void galaxypad_engine_portal_configure(int enabled, float halfWidth, float halfHeight, float unitsPerMetre);
+void galaxypad_engine_portal_set_eyes(const float *six);
 void galaxypad_engine_stereo_set_resolution(int height);
 void galaxypad_engine_stereo_set_rect(int lines);
 int galaxypad_engine_stereo_slot_size(int eye, int slot, int *width, int *height);
@@ -53,8 +55,13 @@ static BOOL sSharpActive;
   // Immersive space: "Screen depth (3D)" off means depth 0, which the engine draws once (mono) for both eyes.
   const float depth = (GalaxyVisionSettings.immersiveSelected && !GalaxyVisionSettings.immersiveDepth) ? 0.0f
                                                                                                          : GalaxyVisionSettings.stereoDepth;
+  // 3D portal window: the window's size and the world scale (800 game units per metre at 1.0; bigger world = fewer units).
+  const float width = GalaxyVisionSettings.portalSize;
+  galaxypad_engine_portal_configure(GalaxyVisionSettings.portalSelected ? 1 : 0, width * 0.5f, width * 0.5625f * 0.5f,
+                                    800.0f / GalaxyVisionSettings.portalWorld);
   [self applyEnabled:(self.status == 1 && GalaxyVisionSettings.bridgeSelected)
                depth:depth
          convergence:GalaxyVisionSettings.stereoConvergence];
 }
++ (void)setPortalEyes:(const float *)six { galaxypad_engine_portal_set_eyes(six); }
 @end

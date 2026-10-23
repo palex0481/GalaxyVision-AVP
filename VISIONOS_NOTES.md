@@ -210,6 +210,45 @@ now reads "Immersive 3D: coming soon", a placeholder for the separate 3D mode, s
 - Unverified on device: that the bridged scene activates under the SDL app delegate, that the window shrinks, that the
   sky/particles/bezel look right, the frame rate in the space.
 
+## 3D portal window (beta, device build compiled; not tested on the headset)
+
+A window in the room that looks into the game as a small 3D world, like SM64-Vision's portal. Pick **3D portal window** in the
+View tab. It is added next to Flat, Stereoscopic window and Immersive space; those are unchanged.
+
+How it works
+- Same plumbing as the Immersive space: the stereo IOSurface bridge (per-eye rings -> `GVStereoRenderer` -> two
+  `LowLevelTexture`s -> `NativeStereo` ShaderGraph on a 16:9 plane) and the `ImmersiveSpace` scene bridge. The space's
+  immersion style is bound to the mode: `.mixed` for the portal (your room stays visible), `.full` for Immersive.
+- A world-locked window plane is placed once when it opens: in front of the head (yaw only), at eye height, at
+  `Window distance`, `Window size` wide.
+- Every frame the host reads the headset pose with ARKit `WorldTrackingProvider.queryDeviceAnchor` (no permission prompt,
+  no Info.plist key needed for the device pose), turns it into the two eye positions in window space (IPD 63 mm, scaled by
+  `Depth`) and sends them to the engine (`galaxypad_engine_portal_set_eyes`).
+- The engine (`Stereo.cpp`, `portal` branch of `beginEye`) renders each eye *through the window rectangle*: the camera is
+  shifted by the eye position (x `units-per-metre`, default 800 / `World size`) and the projection becomes an
+  off-axis frustum (`[0][0]=ez/hw`, `[0][2]=-ex/hw`, `[1][1]=ez/hh`, `[1][2]=-ey/hh`; near/far are recovered from the
+  saved projection and pushed back by `ez`). The picture on the plane therefore changes with head position
+  (parallax, you can look around the edge of what the window shows). Until the first eye pose arrives it uses the normal stereo path.
+- Head *rotation* needs nothing from us: the window is fixed in the room and the system re-projects it.
+- Settings (live, also in the in-game Graphics tab): window size, distance, world size, depth, picture resolution,
+  sharp upscaling (MetalFX). The ambient glow stays Flat-only.
+
+Differences from SM64-Vision (not closeable here)
+- SM64 re-renders from display lists for each eye at the display rate inside Compositor Services. Our engine renders on the
+  game step (~60 fps) and the pose it uses is predicted 25 ms ahead, so there are about 2-3 frames of lag on head
+  *translation*. Fast sideways head moves can make the image trail slightly.
+- Mixed (room visible) is what makes it a "window"; there is no Compositor Services layer, so no depth/foveation.
+
+Unverified (none of this has run on the headset)
+- The scene bridge (`UIHostingSceneDelegate`, `MultipleScenes`) and mixed style under the SDL UIKit app (same as Immersive).
+- Units-per-metre 800 is a guess; if the world looks too big/small, move `World size`.
+- Edge pop-in: culling and LOD use the engine camera, which is shifted, so objects just off the original frustum may pop.
+- Comfort: game camera cuts/roll are not filtered.
+
+Glow diagnostics (same commit): the flat-window glow now writes trace lines (`GalaxyVision glow: on (...)`, then
+every ~5 s `samples N, last sample ... mean colour ...`) so the log shows whether it runs, and the View tab says the glow
+is Flat-only.
+
 ## Immersive 3D (Compositor Services): feasibility assessment (no code written)
 
 Goal: the game world around/in front of the player in true 3D, like SM64-Vision's portal (`PortalRenderer`).

@@ -4,6 +4,9 @@
 #include <stdlib.h>
 
 NSString *const GVKeyViewMode = @"gv.viewMode";
+NSString *const GVKeyPortalSize = @"gv.portalSize";
+NSString *const GVKeyPortalDistance = @"gv.portalDistance";
+NSString *const GVKeyPortalWorld = @"gv.portalWorld";
 NSString *const GVKeyStereoDepth = @"gv.stereoDepth";
 NSString *const GVKeyStereoConvergence = @"gv.stereoConvergence";
 NSString *const GVKeyStereoSharp = @"gv.stereoSharp";
@@ -35,6 +38,9 @@ static NSUserDefaults *Defaults(void) { return NSUserDefaults.standardUserDefaul
     GVKeyStereoConvergence: @1200.0,
     GVKeyStereoResolution: @720,
     GVKeyStereoSharp: @YES,
+    GVKeyPortalSize: @1.2,
+    GVKeyPortalDistance: @1.5,
+    GVKeyPortalWorld: @1.0,
     GVKeyImmersiveDepth: @NO,
     GVKeyImmersiveSize: @6.0,
     GVKeyImmersiveDistance: @3.5,
@@ -83,7 +89,21 @@ static NSUserDefaults *Defaults(void) { return NSUserDefaults.standardUserDefaul
 + (BOOL)smoothMotion { return [Defaults() boolForKey:GVKeySmoothMotion]; }
 + (BOOL)stereoSelected { return [[Defaults() stringForKey:GVKeyViewMode] isEqualToString:@"stereo"]; }
 + (BOOL)immersiveSelected { return [[Defaults() stringForKey:GVKeyViewMode] isEqualToString:@"immersive"]; }
-+ (BOOL)bridgeSelected { return self.stereoSelected || self.immersiveSelected; }
++ (BOOL)portalSelected { return [[Defaults() stringForKey:GVKeyViewMode] isEqualToString:@"portal"]; }
++ (BOOL)spaceSelected { return self.immersiveSelected || self.portalSelected; }
++ (BOOL)bridgeSelected { return self.stereoSelected || self.immersiveSelected || self.portalSelected; }
++ (float)portalSize {
+  const double v = [Defaults() doubleForKey:GVKeyPortalSize];
+  return (v >= 0.6 && v <= 3.0) ? (float)v : 1.2f;
+}
++ (float)portalDistance {
+  const double v = [Defaults() doubleForKey:GVKeyPortalDistance];
+  return (v >= 0.8 && v <= 3.0) ? (float)v : 1.5f;
+}
++ (float)portalWorld {
+  const double v = [Defaults() doubleForKey:GVKeyPortalWorld];
+  return (v >= 0.25 && v <= 4.0) ? (float)v : 1.0f;
+}
 + (BOOL)immersiveDepth { return [Defaults() boolForKey:GVKeyImmersiveDepth]; }
 + (float)stereoDepth {
   const double v = [Defaults() doubleForKey:GVKeyStereoDepth];
