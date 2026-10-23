@@ -178,6 +178,7 @@ private struct PlayTab: View {
   @State private var importing = false
   @State private var importMessage: String?
   @State private var importFailed = false
+  @State private var importProgress: Double?
   @State private var imported = GVGameImporter.haveGame
 
   var body: some View {
@@ -208,10 +209,15 @@ private struct PlayTab: View {
         } else {
           Label("No game data found", systemImage: "exclamationmark.triangle.fill")
             .foregroundStyle(.orange)
-          Text("Extract your Super Mario Galaxy (RMGE01) disc to a folder containing sys/ and files/, put it in Files on this device, then press Import and pick that folder.")
+          Text("Put your Super Mario Galaxy (RMGE01) game data in Files on this device, then press Import and pick it: either an extracted folder containing sys/ and files/, or a decrypted .iso.")
             .font(.callout).multilineTextAlignment(.center)
           if importing {
-            ProgressView("Copying game data…")
+            if let importProgress {
+              ProgressView("Extracting disc image…", value: importProgress)
+                .frame(maxWidth: 360)
+            } else {
+              ProgressView("Copying game data…")
+            }
           } else {
             Button("Import game data…") { showPicker = true }
               .buttonStyle(.bordered)
@@ -236,10 +242,17 @@ private struct PlayTab: View {
       case .success(let url):
         importing = true
         importMessage = nil
+        importProgress = nil
         DispatchQueue.global(qos: .userInitiated).async {
-          let outcome = GVGameImporter.importGame(from: url)
+          var last = -1.0
+          let outcome = GVGameImporter.importGame(from: url) { f in
+            guard f - last >= 0.01 || f >= 1 else { return }
+            last = f
+            DispatchQueue.main.async { importProgress = f }
+          }
           DispatchQueue.main.async {
             importing = false
+            importProgress = nil
             switch outcome {
             case .success:
               importFailed = false
@@ -289,16 +302,47 @@ enum GVGameImporter {
     return nil
   }
 
-  static func importGame(from picked: URL) -> Result<Void, GVImportError> {
+  /// Moves a finished staging folder into place, replacing any old copy only now.
+  private static func install(_ staging: URL) throws {
+    let fm = FileManager.default
+    if fm.fileExists(atPath: gameDir.path) {
+      _ = try fm.replaceItemAt(gameDir, withItemAt: staging)
+    } else {
+      try fm.moveItem(at: staging, to: gameDir)
+    }
+  }
+
+  private static func importISO(_ iso: URL, progress: @escaping (Double) -> Void) -> Result<Void, GVImportError> {
+    let fm = FileManager.default
+    let parent = gameDir.deletingLastPathComponent()
+    let staging = parent.appendingPathComponent("RMGE01.importing", isDirectory: true)
+    do {
+      try fm.createDirectory(at: parent, withIntermediateDirectories: true)
+      if fm.fileExists(atPath: staging.path) { try fm.removeItem(at: staging) }
+      try GVISOExtractor.extract(iso: iso, to: staging, progress: progress)
+      guard isGameRoot(staging) else { throw GVImportError(message: "The extraction didn't produce sys/main.dol and files/. Nothing was changed.") }
+      try install(staging)
+      return .success(())
+    } catch let e as GVImportError {
+      try? fm.removeItem(at: staging)
+      return .failure(e)
+    } catch {
+      try? fm.removeItem(at: staging)
+      return .failure(GVImportError(message: "Extracting failed: \(error.localizedDescription). Your previous game data (if any) was kept."))
+    }
+  }
+
+  static func importGame(from picked: URL, progress: @escaping (Double) -> Void) -> Result<Void, GVImportError> {
     let scoped = picked.startAccessingSecurityScopedResource()
     defer { if scoped { picked.stopAccessingSecurityScopedResource() } }
     let ext = picked.pathExtension.lowercased()
-    if ["iso", "wbfs", "rvz", "gcz", "wia", "ciso", "nkit"].contains(ext) {
-      return .failure(GVImportError(message: "Disc image files (.\(ext)) aren't supported yet. Extract the disc to a folder with sys/ and files/ (for example with Dolphin: right-click the game > Properties > Filesystem > Extract Entire Disc), then pick that folder."))
+    if ext == "iso" { return importISO(picked, progress: progress) }
+    if ["wbfs", "rvz", "gcz", "wia", "ciso", "nkit"].contains(ext) {
+      return .failure(GVImportError(message: ".\(ext) files aren't supported. Use a decrypted .iso, or extract the disc to a folder with sys/ and files/ (for example with Dolphin: right-click the game > Properties > Filesystem > Extract Entire Disc), then pick that."))
     }
     var isDir: ObjCBool = false
     guard FileManager.default.fileExists(atPath: picked.path, isDirectory: &isDir), isDir.boolValue else {
-      return .failure(GVImportError(message: "That's a file, not a folder. Pick the extracted game folder that contains sys/ and files/."))
+      return .failure(GVImportError(message: "That file isn't supported. Pick a decrypted .iso, or the extracted game folder that contains sys/ and files/."))
     }
     guard let root = findGameRoot(in: picked) else {
       return .failure(GVImportError(message: "That folder doesn't look like extracted game data. It needs sys/main.dol and a files/ folder (or a RMGE01 or DATA folder that has them)."))
@@ -545,6 +589,170 @@ private struct GraphicsTab: View {
       }
       .navigationTitle("Graphics")
       .onChange(of: aspect) { _, _ in if inGame { onDisplayChange?() } }
+    }
+  }
+}
+
+// MARK: - Decrypted Wii ISO extraction (no keys; decrypted images only)
+
+/// Extracts the game partition of a decrypted Wii disc image into an RMGE01 folder (sys/ + files/).
+/// Supports decrypted images with the 0x400 hash header still in each 0x8000 cluster, and raw
+/// unhashed partition data. Encrypted images are rejected.
+enum GVISOExtractor {
+  private final class Disc {
+    let h: FileHandle
+    init(_ h: FileHandle) { self.h = h }
+    func read(_ off: UInt64, _ n: Int) throws -> Data {
+      try h.seek(toOffset: off)
+      let d = try h.read(upToCount: n) ?? Data()
+      guard d.count == n else { throw GVImportError(message: "The disc image ended early (truncated file?).") }
+      return d
+    }
+  }
+  private static func be32(_ d: Data, _ o: Int) -> UInt32 {
+    let b = d.startIndex + o
+    return UInt32(d[b]) << 24 | UInt32(d[b + 1]) << 16 | UInt32(d[b + 2]) << 8 | UInt32(d[b + 3])
+  }
+
+  /// Reads `n` bytes at logical partition offset `off`.
+  private struct Partition {
+    let disc: Disc
+    let base: UInt64
+    let hashed: Bool
+    func read(_ off: UInt64, _ n: Int) throws -> Data {
+      if !hashed { return try disc.read(base + off, n) }
+      var out = Data(capacity: n)
+      var o = off
+      var left = n
+      while left > 0 {
+        let cluster = o / 0x7C00, inner = o % 0x7C00
+        let take = min(left, Int(0x7C00 - inner))
+        out.append(try disc.read(base + cluster * 0x8000 + 0x400 + inner, take))
+        o += UInt64(take); left -= take
+      }
+      return out
+    }
+  }
+
+  private static func looksLikeBoot(_ d: Data) -> Bool {
+    d.count >= 0x20 && be32(d, 0x18) == 0x5D1C9EA3
+  }
+
+  static func extract(iso: URL, to dest: URL, progress: (Double) -> Void) throws {
+    guard let h = try? FileHandle(forReadingFrom: iso) else {
+      throw GVImportError(message: "Couldn't open the disc image.")
+    }
+    defer { try? h.close() }
+    let disc = Disc(h)
+    let header = try disc.read(0, 0x20)
+    let id = String(data: header.prefix(6), encoding: .ascii) ?? "?"
+    if be32(header, 0x18) != 0x5D1C9EA3 {
+      throw GVImportError(message: "This isn't a Wii disc image (.iso). WBFS, RVZ and other compressed formats aren't supported; extract the disc to a folder instead.")
+    }
+    guard id == "RMGE01" else {
+      throw GVImportError(message: "This disc is \(id), not the USA Super Mario Galaxy (RMGE01).")
+    }
+    // Partition table: 4 groups of (count, offset>>2) at 0x40000. Find the data partition (type 0).
+    let groups = try disc.read(0x40000, 32)
+    var partOffset: UInt64?
+    for g in 0..<4 where partOffset == nil {
+      let count = be32(groups, g * 8), tableOff = UInt64(be32(groups, g * 8 + 4)) << 2
+      guard count > 0, count < 64 else { continue }
+      let table = try disc.read(tableOff, Int(count) * 8)
+      for i in 0..<Int(count) where be32(table, i * 8 + 4) == 0 {
+        partOffset = UInt64(be32(table, i * 8)) << 2; break
+      }
+    }
+    guard let p = partOffset else {
+      throw GVImportError(message: "Couldn't find the game partition in this disc image (unknown layout).")
+    }
+    let phdr = try disc.read(p, 0x2C0)
+    let dataBase = p + (UInt64(be32(phdr, 0x2B8)) << 2)
+    // Decide the layout by where a valid boot.bin appears.
+    let hashedBoot = try? disc.read(dataBase + 0x400, 0x440)
+    let rawBoot = try? disc.read(dataBase, 0x440)
+    let part: Partition
+    if let b = hashedBoot, looksLikeBoot(b) {
+      part = Partition(disc: disc, base: dataBase, hashed: true)
+    } else if let b = rawBoot, looksLikeBoot(b) {
+      part = Partition(disc: disc, base: dataBase, hashed: false)
+    } else {
+      throw GVImportError(message: "This disc image looks encrypted (or uses an unknown layout). Only decrypted ISOs are supported. Decrypt it or extract it to a folder, then try again.")
+    }
+
+    let fm = FileManager.default
+    let sys = dest.appendingPathComponent("sys", isDirectory: true)
+    let files = dest.appendingPathComponent("files", isDirectory: true)
+    try fm.createDirectory(at: sys, withIntermediateDirectories: true)
+    try fm.createDirectory(at: files, withIntermediateDirectories: true)
+
+    let boot = try part.read(0, 0x440)
+    let bootID = String(data: boot.prefix(6), encoding: .ascii) ?? "?"
+    guard bootID == "RMGE01" else {
+      throw GVImportError(message: "The game partition is \(bootID), not RMGE01.")
+    }
+    try boot.write(to: sys.appendingPathComponent("boot.bin"))
+    try part.read(0x440, 0x2000).write(to: sys.appendingPathComponent("bi2.bin"))
+    let apphdr = try part.read(0x2440, 0x20)
+    let appSize = 0x20 + Int(be32(apphdr, 0x14)) + Int(be32(apphdr, 0x18))
+    try part.read(0x2440, appSize).write(to: sys.appendingPathComponent("apploader.img"))
+    let dolOff = UInt64(be32(boot, 0x420)) << 2
+    let dolHdr = try part.read(dolOff, 0x100)
+    var dolSize = 0x100
+    for i in 0..<18 {
+      let o = Int(be32(dolHdr, i * 4)), s = Int(be32(dolHdr, 0x90 + i * 4))
+      if s > 0 { dolSize = max(dolSize, o + s) }
+    }
+    try part.read(dolOff, dolSize).write(to: sys.appendingPathComponent("main.dol"))
+    let fstOff = UInt64(be32(boot, 0x424)) << 2, fstSize = Int(be32(boot, 0x428)) << 2
+    let fst = try part.read(fstOff, fstSize)
+    try fst.write(to: sys.appendingPathComponent("fst.bin"))
+
+    // FST: 12-byte entries; root's size field is the entry count; names follow the entries.
+    let count = Int(be32(fst, 8))
+    guard count > 0, count * 12 <= fst.count else {
+      throw GVImportError(message: "The disc's file table is damaged (unknown layout).")
+    }
+    let names = count * 12
+    func name(_ i: Int) -> String {
+      let start = fst.startIndex + names + Int(be32(fst, i * 12) & 0xFFFFFF)
+      var end = start
+      while end < fst.endIndex && fst[end] != 0 { end += 1 }
+      return String(data: fst[start..<end], encoding: .utf8) ?? String(decoding: fst[start..<end], as: UTF8.self)
+    }
+    var total: UInt64 = 0
+    for i in 1..<count where fst[fst.startIndex + i * 12] == 0 { total += UInt64(be32(fst, i * 12 + 8)) }
+    var done: UInt64 = 0
+    // Stack of (directory URL, end index).
+    var stack: [(URL, Int)] = [(files, count)]
+    var i = 1
+    while i < count {
+      while let top = stack.last, i >= top.1 { stack.removeLast() }
+      let dir = stack.last?.0 ?? files
+      let n = name(i)
+      guard !n.isEmpty, n != ".", n != "..", !n.contains("/") else {
+        throw GVImportError(message: "The disc's file table has a bad name (unknown layout).")
+      }
+      if fst[fst.startIndex + i * 12] != 0 {
+        let sub = dir.appendingPathComponent(n, isDirectory: true)
+        try fm.createDirectory(at: sub, withIntermediateDirectories: true)
+        stack.append((sub, Int(be32(fst, i * 12 + 8))))
+      } else {
+        let off = UInt64(be32(fst, i * 12 + 4)) << 2
+        let size = UInt64(be32(fst, i * 12 + 8))
+        let url = dir.appendingPathComponent(n)
+        fm.createFile(atPath: url.path, contents: nil)
+        let out = try FileHandle(forWritingTo: url)
+        var pos: UInt64 = 0
+        while pos < size {
+          let chunk = Int(min(UInt64(4 << 20), size - pos))
+          try autoreleasepool { try out.write(contentsOf: try part.read(off + pos, chunk)) }
+          pos += UInt64(chunk); done += UInt64(chunk)
+          if total > 0 { progress(Double(done) / Double(total)) }
+        }
+        try out.close()
+      }
+      i += 1
     }
   }
 }
