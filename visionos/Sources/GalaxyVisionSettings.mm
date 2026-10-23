@@ -67,7 +67,7 @@ static NSUserDefaults *Defaults(void) { return NSUserDefaults.standardUserDefaul
 }
 + (NSInteger)stereoResolution {
   const NSInteger v = [Defaults() integerForKey:GVKeyStereoResolution];
-  return (v == 540 || v == 720 || v == 1080) ? v : 720;
+  return (v == 540 || v == 720 || v == 900 || v == 1080) ? v : 720;
 }
 + (BOOL)stereoSharp { return [Defaults() boolForKey:GVKeyStereoSharp]; }
 + (float)stereoConvergence {

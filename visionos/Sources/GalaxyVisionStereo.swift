@@ -43,6 +43,8 @@ final class GVStereoRenderer: NSObject, ObservableObject {
   private var prepared = false
   private var shown = false
   private var frames = 0
+  // Timing (the trace log): GPU time of the copy / scaler command buffer and how many pairs reach the display.
+  private let timing = GVStereoTiming()
 
   func prepare() async throws {
     guard !prepared else { return }
@@ -239,6 +241,10 @@ final class GVStereoRenderer: NSObject, ObservableObject {
       }
     }
     if GVStereoEngine.sharpActive != scaled { GVStereoEngine.sharpActive = scaled }
+    let timing = self.timing
+    commandBuffer.addCompletedHandler { buffer in
+      timing.add(gpuMs: (buffer.gpuEndTime - buffer.gpuStartTime) * 1000.0, scaled: scaled)
+    }
     commandBuffer.commit()
     pending = commandBuffer
     frames += 1
@@ -250,6 +256,27 @@ final class GVStereoRenderer: NSObject, ObservableObject {
 
   private static func failure(_ message: String) -> NSError {
     NSError(domain: "GalaxyVisionStereo", code: 1, userInfo: [NSLocalizedDescriptionKey: message])
+  }
+}
+
+/// GPU time of the host's copy (and MetalFX) command buffer, printed to the trace log every 120 pairs.
+final class GVStereoTiming: @unchecked Sendable {
+  private let lock = NSLock()
+  private var total = 0.0, peak = 0.0, count = 0
+  private var start = CACurrentMediaTime()
+
+  func add(gpuMs: Double, scaled: Bool) {
+    lock.lock()
+    total += gpuMs
+    peak = max(peak, gpuMs)
+    count += 1
+    guard count == 120 else { lock.unlock(); return }
+    let now = CACurrentMediaTime()
+    let line = String(format: "GalaxyVision stereo host: %d pairs shown in %.2f s (%.1f per second), copy%@ GPU time mean %.2f ms, max %.2f ms\n",
+                      count, now - start, Double(count) / max(0.001, now - start), scaled ? "+MetalFX" : "", total / Double(count), peak)
+    total = 0; peak = 0; count = 0; start = now
+    lock.unlock()
+    fputs(line, stderr)
   }
 }
 

@@ -120,3 +120,31 @@ Depth and convergence sliders: `gv.stereoDepth` (0-2, default 1) and `gv.stereoC
 - Overlay visibility (`main.mm`): `GVShowOverlay` hides the stereo child view while the options overlay (a subview of the game window,
   never a UIWindow) is up, so the 2D overlay cannot end up behind the 3D RealityKit plane; the paused game's flat frame shows behind
   it. `GVHideOverlay` shows the stereo view again before unpausing.
+
+## Stereo performance pass (unmeasured on device)
+
+Starting point (Low 540p stereo, trace of the c03120e MetalFX build): about 42 game steps/s, 22-25 ms per step.
+Per step the game thread was busy about 13 ms and then waited about 10 ms for the draw-done (the GX processor drain
+plus the EFB-snapshot GPU round trip). Resolution barely changed the step time (old 3x stereo about 25 ms), so the
+step is latency/serialisation bound, not pixel bound. Flat 60 fps for comparison: 8.4 ms work + 4.8 ms draw-done.
+
+Changes (engine commit "Stereo: Wii order ..."):
+- **Wii frame order for stereo.** Draw left, draw right, then update/calcAnim, so the game logic overlaps the right
+  eye's GX drain (as the flat window already does). `Stereo::beginEyes(previousStep)` uses the view stage saved by the
+  previous step's calcAnim. Cost: the eyes show the state of the previous update, i.e. up to one step more latency.
+- **Left eye skips its EFB captures.** `Stereo::skipDrawSync()` makes LensFlare / StarPointerDirector / TalkDirector
+  skip `setDrawSyncToken()` while drawing the left eye. The right eye's captures always overwrote the left's before, so the
+  game sees the same data. Removes 3 render-pass splits and a GPU round trip from the left eye.
+- **Balanced 1600x900 stereo resolution** (MetalFX) between Medium and High.
+- **Timers** (no behaviour change), printed to the trace log (Library/Caches/galaxyvision-trace.log):
+  - `Petari Stereo timing (ms per step ...)`: update, calcAnim, draw left (game-thread CPU), present left (left drain wait),
+    draw right, end frame, seam, retrace wait.
+  - `Petari Stereo GX processor thread: N ms busy per step`: time the Aurora FIFO processor thread spends turning GX
+    commands into draws (pipeline/bind-group lookup, uniforms, texture upload, draw building).
+  - `Petari Stereo GPU ...`: submit-to-GPU-done per eye.
+  - `GalaxyVision stereo host ...`: pairs/s and copy/MetalFX GPU time of the RealityKit side.
+
+Not done: recording the GX stream once and replaying it for the second eye. J3D loads each shape's view*model matrices
+inside the draw stream, so a replay has to patch matrices in the FIFO; too risky to do without a device to test on.
+Expected gain of the shipped changes is an estimate only (about 23 ms -> 13-17 ms per step); read the new log lines after
+a stereo session to verify. 60 fps at 1080p per eye is unproven.

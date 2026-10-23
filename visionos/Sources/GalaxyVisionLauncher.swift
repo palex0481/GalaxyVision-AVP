@@ -119,6 +119,7 @@ struct StereoSettingsSection: View {
       Picker("Stereo resolution", selection: $resolution) {
         Text("Low (960\u{00D7}540)").tag(540)
         Text("Medium (1280\u{00D7}720)").tag(720)
+        Text("Balanced (1600\u{00D7}900)").tag(900)
         Text("High (1920\u{00D7}1080)").tag(1080)
       }
       Toggle("Sharp upscaling (MetalFX)", isOn: $sharp)
@@ -134,7 +135,7 @@ struct StereoSettingsSection: View {
     } header: {
       Text("Stereoscopic window (beta)")
     } footer: {
-      Text("Stereo resolution is the size the game is drawn at for each eye (it is drawn twice, so a lower size runs faster and smoother; High looks sharpest and runs slowest). Sharp upscaling (MetalFX) draws at Low or Medium and enlarges the picture to the full eye size with Apple\u{2019}s upscaler, so it looks crisper than a plain stretch for about the same speed; it does nothing at High, and the plain stretch is used if it can\u{2019}t start. Depth 0 is flat; higher separates the eyes more. Convergence is how far from the camera, in game units, things appear at the screen's surface: nearer values push more of the scene behind the window, farther values bring it out of it. The game HUD stays on the screen plane. Settings apply live from the options screen. If the stereo view cannot start, the flat window is used and a message says why; the trace is in Library/Caches/galaxyvision-trace.log.")
+      Text("Stereo resolution is the size the game is drawn at for each eye (it is drawn twice, so a lower size runs faster and smoother; High looks sharpest and runs slowest). Sharp upscaling (MetalFX) draws at Low, Medium or Balanced and enlarges the picture to the full eye size with Apple\u{2019}s upscaler, so it looks crisper than a plain stretch for about the same speed; it does nothing at High, and the plain stretch is used if it can\u{2019}t start. Depth 0 is flat; higher separates the eyes more. Convergence is how far from the camera, in game units, things appear at the screen's surface: nearer values push more of the scene behind the window, farther values bring it out of it. The game HUD stays on the screen plane. Settings apply live from the options screen. If the stereo view cannot start, the flat window is used and a message says why; the trace is in Library/Caches/galaxyvision-trace.log.")
     }
     .onChange(of: depth) { _, _ in onChange?() }
     .onChange(of: convergence) { _, _ in onChange?() }
