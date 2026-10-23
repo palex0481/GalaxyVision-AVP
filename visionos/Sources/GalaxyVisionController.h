@@ -6,8 +6,8 @@
 @interface GalaxyVisionController : NSObject
 + (instancetype)shared;
 - (void)start;
-// Called on the main thread when the pad's options combo (Options + Create, or N64 Start + Capture)
-// has been held for half a second.
+// Called on the main thread when the options shortcut fires: R1 / RB pressed (PlayStation / Xbox pads),
+// or N64 Start + Capture held for half a second.
 @property(nonatomic, copy) void (^onOptionsRequested)(void);
 // While YES (the in-game options overlay is up) nothing is forwarded to the game.
 @property(nonatomic) BOOL inputSuspended;

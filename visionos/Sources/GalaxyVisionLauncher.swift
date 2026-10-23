@@ -79,7 +79,7 @@ private struct SavingTab: View {
         } header: {
           Text("Saving")
         } footer: {
-          Text("Open this screen any time with the Options button at the top right of the game, or hold Options + Create (PlayStation) or Start + Capture (N64 pad) for half a second.")
+          Text("Open this screen any time with the Options button at the top right of the game, or press R1 (PlayStation) / RB (Xbox). On the N64 pad, hold Start + Capture for half a second.")
         }
         Section {
           Button(role: .destructive) { confirmQuit = true } label: {
@@ -92,9 +92,6 @@ private struct SavingTab: View {
         }
         Section("Applies right away") {
           Text("Pointer, gyro and button settings (Controls tab), aspect ratio and smooth motion (Graphics tab; the aspect ratio is saved by the game and fully applies on the next start).")
-        }
-        Section("Applies on next start") {
-          Text("Supersampling. Quit GalaxyVision after saving and open it again to change it.")
         }
       }
       .navigationTitle("Saving")
@@ -157,7 +154,7 @@ private struct PlayTab: View {
           .buttonStyle(.borderedProminent)
           .controlSize(.extraLarge)
           .disabled(started)
-          Text("The first start prepares shaders and can take a while. Settings apply when you press Play. In game, tap the Options button at the top right (or hold Options + Create, or Start + Capture on the N64 pad) for the options screen. Closing the window does not save: use Pause > Save your progress and quit.")
+          Text("The first start prepares shaders and can take a while. Settings apply when you press Play. In game, tap the Options button at the top right (or press R1 / RB on the controller; on the N64 pad hold Start + Capture) for the options screen. Closing the window does not save: use Pause > Save your progress and quit.")
             .font(.footnote).foregroundStyle(.secondary)
         } else {
           Label("No game data found", systemImage: "exclamationmark.triangle.fill")
@@ -265,10 +262,11 @@ private struct ControlsTab: View {
           layoutRow("L2", "Crouch, ground pound")
           layoutRow("L1", "Camera reset")
           layoutRow("Right stick", "Aim pointer")
-          layoutRow("L3 / R1 / R3", "Recenter pointer")
-          layoutRow("Options", "Pause (Plus)")
+          layoutRow("L3 / R3", "Recenter pointer")
+          layoutRow("R1 / RB", "Open the options screen (not sent to the game)")
+          layoutRow("Options", "Pause (Plus) only")
           layoutRow("Create / Share", "Minus")
-          layoutRow("N64 pad", "A/B jump, Z crouch, L camera, R spin, C buttons nudge the pointer, C-down shoots, Capture recenters (hold Capture + C-down to nudge down), Start pauses")
+          layoutRow("N64 pad", "A/B jump, Z crouch, L camera, R spin, C buttons nudge the pointer, C-down shoots, Capture recenters (hold Capture + C-down to nudge down), Start pauses, Start + Capture held opens the options screen")
         }
       }
       .navigationTitle("Controls")
@@ -291,24 +289,12 @@ private struct GraphicsTab: View {
   /// Shown over the running game: aspect ratio and smooth motion apply right away.
   var inGame = false
   var onDisplayChange: (() -> Void)? = nil
-  @AppStorage(GVKeyRenderScale) private var renderScale = 0.0
   @AppStorage(GVKeyAspect) private var aspect = -1
   @AppStorage(GVKeySmoothMotion) private var smoothMotion = false
 
   var body: some View {
     NavigationStack {
       Form {
-        Section {
-          Picker("Supersampling", selection: $renderScale) {
-            Text("Off").tag(0.0)
-            Text("2x").tag(2.0)
-            Text("3x").tag(3.0)
-          }
-        } header: {
-          Text("Supersampling")
-        } footer: {
-          Text("Supersampling renders the game at a multiple of its own frame size for smoother edges. Higher values cost performance.\(inGame ? " Applies on the next start." : "")")
-        }
         Section {
           Picker("Aspect ratio", selection: $aspect) {
             Text("Engine default").tag(-1)

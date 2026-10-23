@@ -38,26 +38,26 @@ minimal app `visionos/GalaxyVision` compiles and links with the generic visionOS
   Star Bits / menu Back), C=Nunchuk C, Z=Nunchuk Z, Spin=Wii shake. Hovering the pointer collects Star Bits by
   itself; B shoots them; holding A on the pointer grabs Pull Stars.
   - PS / Xbox: left stick move, Cross A, Circle A (setting; else B), Square/Triangle spin, R2 B, L2 Z, L1 C,
-    right stick pointer (1.2 x dt/s x sensitivity, 0.15 dead zone), L3/R1/R3 recenter, Options Plus,
-    Create/Share Minus. Optional gyro aim (default off, axes unverified).
+    right stick pointer (1.2 x dt/s x sensitivity, 0.15 dead zone), L3/R3 recenter, Options Plus (pause only),
+    Create/Share Minus. R1/RB opens the options overlay (edge-triggered press, as SM64-Vision's R button; never sent to the game). Optional gyro aim (default off, axes unverified).
   - N64 (Switch Online): A/B jump, Z crouch, L camera, R spin, C buttons nudge the pointer (hold accelerates),
-    C-down shoots (while Capture is held it nudges down instead), Capture recenters, Start pauses.
+    C-down shoots (while Capture is held it nudges down instead), Capture recenters, Start pauses, Start + Capture held 0.5 s opens the overlay (R is spin).
 - `GalaxyVisionLauncher.swift`: SwiftUI launcher (Play / View / Controls / Graphics). It lives in the scene
   delegate; Play hides it and hands the scene to the engine's SDL scene delegate (no second UIApplicationMain).
-- Graphics: the MSAA row was removed (not usable in this engine). The picker is labelled "Supersampling" (Off / 2x / 3x; Off = engine native) and maps to `PETARI_RENDER_SCALE`
-  and offers only 2x/3x of the game framebuffer (below the 2560x1440 headset window); the old 4x (framebuffer larger than
-  the window drawable) showed the picture at ~80% size, anchored top-left, with a dark panel right and below. Cause not
-  proven statically; with a non-default scale the shell writes PETARI_TRACE_BOOT output (surface/EFB/XFB/viewport sizes)
-  to `Library/Caches/galaxyvision-trace.log` in the app container.
+- Graphics: the MSAA row was removed (not usable in this engine) and the Supersampling picker was removed too (2x/3x were below
+  the engine's native size and confusing). Rendering is always engine-native; the stored `gv.renderScale` is ignored unless the
+  process env has `GV_ALLOW_RENDER_SCALE=1`, in which case it maps to `PETARI_RENDER_SCALE` (debug only; the old 4x, with a
+  framebuffer larger than the window drawable, showed the picture at ~80% size, anchored top-left; with a non-default scale the shell
+  writes PETARI_TRACE_BOOT output to `Library/Caches/galaxyvision-trace.log`).
 - In game: a subtle "Options" pill (top right, own non-key passthrough UIWindow, shown once the engine reports started, with a
-  7 s hint toast) opens the overlay; the pad combo does too. The overlay's Saving tab has "Quit GalaxyVision..." (confirmation
+  7 s hint toast) opens the overlay; so does R1/RB on PS/Xbox pads. The overlay's Saving tab has "Quit GalaxyVision..." (confirmation
   dialog, calls galaxypad_engine_quit, no save). The engine's PauseMenu is decompiled game code inside the framework (the shell
   can't add an entry without rebuilding the engine; no exported pause-state query), so no hook was added.
-- Overlay (combo or pill): hold Options + Create (N64 pad: Start + Capture) for 0.5 s -> options overlay (second UIWindow in the game's
+- Overlay (R1/RB press, pill, or N64 pad Start + Capture held 0.5 s; Options is pause only) -> options overlay (second UIWindow in the game's
   scene, game paused via galaxypad_engine_pause, no input forwarded). Pointer/gyro/button settings apply live, aspect and
-  smooth motion are re-applied to the engine, supersampling applies on next start. The engine cannot return to the
+  smooth motion are re-applied to the engine. The engine cannot return to the
   launcher mid-game (SDL window + render loop live until exit).
 - Save: the game's own save sequence cannot be started safely from a lifecycle callback, so on scene re-activation after a
   resign/background the shell shows a "Closing the window does not save" toast; the overlay and launcher repeat it.
-  Supersampling maps to `PETARI_RENDER_SCALE`. Aspect ratio and Smooth Motion are applied after the engine starts
+  Aspect ratio and Smooth Motion are applied after the engine starts
   (aspect saved by the game for the next start; smooth motion needs >= 110 Hz).

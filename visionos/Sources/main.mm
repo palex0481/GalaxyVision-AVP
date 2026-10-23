@@ -187,7 +187,7 @@ static void GVWaitForGameStart(void) {
   dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(1 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
     if (galaxypad_engine_started()) {
       GVShowPill();
-      GVShowToast(@"Options: tap the Options button at the top right,\nor hold Options + Create on the controller.", 7);
+      GVShowToast(@"Options: tap the Options button at the top right,\nor press R1 / RB on the controller.", 7);
     } else {
       GVWaitForGameStart();
     }

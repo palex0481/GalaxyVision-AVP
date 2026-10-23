@@ -57,7 +57,8 @@ static const float kStickPointerSpeed = 1.2f;  // viewport widths per second at 
   CFTimeInterval _nudgeStartX, _nudgeStartY;
   // gyro
   GCController *_motionOwner;
-  // options combo
+  // options shortcut: R1/RB press (PS/Xbox pads), or Start + Capture held (N64 pad)
+  BOOL _r1Held;
   CFTimeInterval _comboStart;
   BOOL _comboFired;
   BOOL _suspended;
@@ -67,9 +68,10 @@ static const float kStickPointerSpeed = 1.2f;  // viewport widths per second at 
 - (void)setInputSuspended:(BOOL)suspended {
   if (suspended == _suspended) return;
   _suspended = suspended;
-  // Resuming with the combo buttons still down must not reopen the overlay: wait for release.
+  // Resuming with the shortcut buttons still down must not reopen the overlay: wait for release.
   _comboStart = 0;
   _comboFired = YES;
+  _r1Held = YES;
   _lastButtons = ~0u;  // force the next poll to send the current state
   if (suspended) galaxypad_engine_input(0, 0, 0, 0, -1.0f, -1.0f);
 }
@@ -176,8 +178,8 @@ static const float kStickPointerSpeed = 1.2f;  // viewport widths per second at 
       if (pad.rightTrigger.value > 0.3f || pad.rightTrigger.pressed) { buttons |= kB; [self showPointer]; }  // R2: shoot
       if (pad.leftShoulder.pressed) buttons |= kC;   // L1: camera reset
       if (pad.buttonOptions.pressed) buttons |= kMinus;  // Create / Share / View
-      const BOOL rc = pad.leftThumbstickButton.pressed || pad.rightShoulder.pressed ||
-                      pad.rightThumbstickButton.pressed;  // L3 / R1 / R3 recenter pointer
+      const BOOL rc = pad.leftThumbstickButton.pressed ||
+                      pad.rightThumbstickButton.pressed;  // L3 / R3 recenter pointer (R1 opens the options overlay)
       if (rc && !_recenterHeld) recenterNow = YES;
       _recenterHeld = rc;
       // Right stick: analog pointer.
@@ -191,17 +193,25 @@ static const float kStickPointerSpeed = 1.2f;  // viewport widths per second at 
     }
   } else {
     _recenterHeld = _captureHeld = NO;
+    _r1Held = NO;
     _nudgeDirX = _nudgeDirY = 0;
   }
   if (recenterNow) [self recenter];
 
-  // Options combo: Options + Create (PlayStation / Xbox pads) or Start + Capture (N64 pad), held 0.5 s.
-  BOOL combo = NO;
-  if (pad) {
-    combo = n64 ? (pad.buttonMenu.pressed && _captureHeld)
-                : (pad.buttonMenu.pressed && pad.buttonOptions.pressed);
+  // Options overlay shortcut.
+  //  - PlayStation / Xbox pads: a press of the right shoulder (R1 / RB), like SM64-Vision's R button.
+  //    Edge-triggered, so holding it does not reopen the overlay. R1 is never forwarded to the game.
+  //    Options stays Plus (pause) and does not open the overlay.
+  //  - N64 pad: R is spin, so Start + Capture held for 0.5 s.
+  if (pad && !n64) {
+    const BOOL r1 = pad.rightShoulder.pressed;
+    const BOOL fire = r1 && !_r1Held;
+    _r1Held = r1;
+    if (fire && self.onOptionsRequested) { self.onOptionsRequested(); return; }
+  } else {
+    _r1Held = NO;
   }
-  if (combo) {
+  if (pad && n64 && pad.buttonMenu.pressed && _captureHeld) {
     buttons &= ~(kPlus | kMinus);  // do not feed the combo itself to the game
     if (_comboStart == 0) _comboStart = now;
     if (!_comboFired && now - _comboStart >= 0.5) {
