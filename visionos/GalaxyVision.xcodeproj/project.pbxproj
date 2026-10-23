@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		06BC8274FBE80663DD7DDF85 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A38CFE0898484C710D2E470A /* SwiftUI.framework */; };
 		25681A4AD4DB913AF02F0007 /* GalaxyPadEngine.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 2D1E6B43CB0E6A2FE52F016C /* GalaxyPadEngine.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		2AC70771104C64A8D9F57A70 /* UIKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 9EE17E7F1726D3AB3488F241 /* UIKit.framework */; };
 		30661FD1C1B2F23CFBEC9E33 /* GameController.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 4F1111C9925ABE66F81767D4 /* GameController.framework */; };
@@ -15,6 +16,8 @@
 		6B47641DE9CE74950328FB51 /* main.mm in Sources */ = {isa = PBXBuildFile; fileRef = 83D45D20E19019C86E747EAC /* main.mm */; };
 		7D2667BAEBFB03D05CD5A6A1 /* Metal.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 59C063713F25D74D674C471B /* Metal.framework */; };
 		87254B6F68B6790DD8C50B7A /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 5BA56ACBADEFCE5F9A181398 /* Assets.xcassets */; };
+		A2DBDA356E5FCC2E946C6551 /* GalaxyVisionSettings.mm in Sources */ = {isa = PBXBuildFile; fileRef = 26C89ABD504C8C0FB38B7C50 /* GalaxyVisionSettings.mm */; };
+		BDBC5052BB7F5FE28E816DFC /* GalaxyVisionLauncher.swift in Sources */ = {isa = PBXBuildFile; fileRef = B84CEB9E7B76B15665EB1079 /* GalaxyVisionLauncher.swift */; };
 		DC733DB5B2083B6DB9C744BF /* QuartzCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = BE68F1ABBA74EF4A9DF5B41D /* QuartzCore.framework */; };
 		EBDBDC9A2BABCFE90C4572BD /* UniformTypeIdentifiers.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 81A3E315B4A090CBC262A2BF /* UniformTypeIdentifiers.framework */; };
 /* End PBXBuildFile section */
@@ -34,6 +37,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		26C89ABD504C8C0FB38B7C50 /* GalaxyVisionSettings.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = GalaxyVisionSettings.mm; sourceTree = "<group>"; };
 		2D1E6B43CB0E6A2FE52F016C /* GalaxyPadEngine.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = GalaxyPadEngine.framework; path = "../generated/build/visionos-device-engine/native/app/GalaxyPadEngine.framework"; sourceTree = "<group>"; };
 		4BACAFC35890EA3401E27C29 /* GalaxyVisionController.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = GalaxyVisionController.mm; sourceTree = "<group>"; };
 		4F1111C9925ABE66F81767D4 /* GameController.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = GameController.framework; path = System/Library/Frameworks/GameController.framework; sourceTree = SDKROOT; };
@@ -42,8 +46,12 @@
 		81A3E315B4A090CBC262A2BF /* UniformTypeIdentifiers.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = UniformTypeIdentifiers.framework; path = System/Library/Frameworks/UniformTypeIdentifiers.framework; sourceTree = SDKROOT; };
 		83D45D20E19019C86E747EAC /* main.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = main.mm; sourceTree = "<group>"; };
 		9EE17E7F1726D3AB3488F241 /* UIKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = UIKit.framework; path = System/Library/Frameworks/UIKit.framework; sourceTree = SDKROOT; };
+		A38CFE0898484C710D2E470A /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
+		AB9AD67F3258FE8D502722A5 /* GalaxyVisionSettings.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = GalaxyVisionSettings.h; sourceTree = "<group>"; };
+		B84CEB9E7B76B15665EB1079 /* GalaxyVisionLauncher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GalaxyVisionLauncher.swift; sourceTree = "<group>"; };
 		BE68F1ABBA74EF4A9DF5B41D /* QuartzCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QuartzCore.framework; path = System/Library/Frameworks/QuartzCore.framework; sourceTree = SDKROOT; };
 		C8BC1635F6A1769F1325B72A /* GalaxyVisionController.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = GalaxyVisionController.h; sourceTree = "<group>"; };
+		F4950FF4E5FBFE527A5CA472 /* GalaxyVision-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "GalaxyVision-Bridging-Header.h"; sourceTree = "<group>"; };
 		F77BC0D13ADDB7866B9B1F14 /* GalaxyVision.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = GalaxyVision.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -58,6 +66,7 @@
 				7D2667BAEBFB03D05CD5A6A1 /* Metal.framework in Frameworks */,
 				DC733DB5B2083B6DB9C744BF /* QuartzCore.framework in Frameworks */,
 				EBDBDC9A2BABCFE90C4572BD /* UniformTypeIdentifiers.framework in Frameworks */,
+				06BC8274FBE80663DD7DDF85 /* SwiftUI.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -89,6 +98,7 @@
 				4F1111C9925ABE66F81767D4 /* GameController.framework */,
 				59C063713F25D74D674C471B /* Metal.framework */,
 				BE68F1ABBA74EF4A9DF5B41D /* QuartzCore.framework */,
+				A38CFE0898484C710D2E470A /* SwiftUI.framework */,
 				9EE17E7F1726D3AB3488F241 /* UIKit.framework */,
 				81A3E315B4A090CBC262A2BF /* UniformTypeIdentifiers.framework */,
 			);
@@ -98,8 +108,12 @@
 		F4BC593154AACD7A40634DE6 /* Sources */ = {
 			isa = PBXGroup;
 			children = (
+				F4950FF4E5FBFE527A5CA472 /* GalaxyVision-Bridging-Header.h */,
 				C8BC1635F6A1769F1325B72A /* GalaxyVisionController.h */,
 				4BACAFC35890EA3401E27C29 /* GalaxyVisionController.mm */,
+				B84CEB9E7B76B15665EB1079 /* GalaxyVisionLauncher.swift */,
+				AB9AD67F3258FE8D502722A5 /* GalaxyVisionSettings.h */,
+				26C89ABD504C8C0FB38B7C50 /* GalaxyVisionSettings.mm */,
 				83D45D20E19019C86E747EAC /* main.mm */,
 			);
 			path = Sources;
@@ -210,6 +224,8 @@
 			buildActionMask = 2147483647;
 			files = (
 				68A6B83A23EFBEBAA13C42F3 /* GalaxyVisionController.mm in Sources */,
+				BDBC5052BB7F5FE28E816DFC /* GalaxyVisionLauncher.swift in Sources */,
+				A2DBDA356E5FCC2E946C6551 /* GalaxyVisionSettings.mm in Sources */,
 				6B47641DE9CE74950328FB51 /* main.mm in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -237,6 +253,9 @@
 				MARKETING_VERSION = 0.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.example.galaxyvision;
 				SDKROOT = xros;
+				SWIFT_OBJC_BRIDGING_HEADER = "Sources/GalaxyVision-Bridging-Header.h";
+				SWIFT_OBJC_INTERFACE_HEADER_NAME = "GalaxyVision-Swift.h";
+				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = 7;
 			};
 			name = Debug;
@@ -324,6 +343,9 @@
 				MARKETING_VERSION = 0.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.example.galaxyvision;
 				SDKROOT = xros;
+				SWIFT_OBJC_BRIDGING_HEADER = "Sources/GalaxyVision-Bridging-Header.h";
+				SWIFT_OBJC_INTERFACE_HEADER_NAME = "GalaxyVision-Swift.h";
+				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = 7;
 			};
 			name = Release;
