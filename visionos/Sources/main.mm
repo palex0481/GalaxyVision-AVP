@@ -87,6 +87,8 @@ int main(int argc, char *argv[]) {
                     [files createDirectoryAtURL:user withIntermediateDirectories:YES attributes:nil error:nil];
     if (haveGame) {
       setenv("GALAXYPAD_ENGINE_HOST", "1", 1);
+      // TARGET_OS_IPHONE is true on visionOS, so the engine would draw its phone touch controls.
+      setenv("PETARI_TOUCH_CONTROLS", "0", 1);
       NSArray<NSString *> *args = @[ @"GalaxyVision", @"--disc", game.path, @"--user", user.path ];
       char **engineArgv = (char **)calloc(args.count + 1, sizeof(char *));
       for (NSUInteger i = 0; i < args.count; ++i) engineArgv[i] = strdup(args[i].fileSystemRepresentation);
