@@ -209,3 +209,75 @@ now reads "Immersive 3D: coming soon", a placeholder for the separate 3D mode, s
   little soft at 40 px/deg); passthrough dimming levels.
 - Unverified on device: that the bridged scene activates under the SDL app delegate, that the window shrinks, that the
   sky/particles/bezel look right, the frame rate in the space.
+
+## Immersive 3D (Compositor Services): feasibility assessment (no code written)
+
+Goal: the game world around/in front of the player in true 3D, like SM64-Vision's portal (`PortalRenderer`).
+
+**What carries over.** The engine already renders a left and a right eye per step with an off-axis projection
+(`Stereo::beginEye` edits the view matrix and `mProjection[0][2]`) into IOSurface rings that Dawn writes and the host
+reads (`stereo_bridge.cpp`, 4 slots per eye, each published slot reports its own size). A `CompositorLayer`
+(`layout = .dedicated`, `bgra8Unorm_srgb`, `depth32Float`, foveation off, own render thread, as in
+`MarioVisionApp.swift`) can sample those same IOSurface textures. The drawable's textures belong to Compositor
+Services, so the host draws a textured quad per eye into them (a render pass, not a blit: format/sRGB and scale
+differ); no change to how Dawn writes.
+
+**Differences from SM64-Vision that matter.** SM64's `PortalRenderer` replays a display list per eye at the display rate
+(90 Hz) from the live head pose, the game ticking at 30 Hz. This engine can't: it draws through the GX FIFO once per eye
+per game step (60 Hz at best, measured ~60 fps at 1080p), and replaying a recorded GX stream per eye is the unsolved
+"patch the matrices in the FIFO" problem (see the performance notes). So the pose the engine renders with is always
+1-2 frames old, and the compositor at 90 Hz needs something between engine frames.
+
+**Design for a first version, in order of risk.**
+1. *Milestone 0, the plumbing (low risk).* An `ImmersiveSpace` with a `CompositorLayer` (`.mixed` or `.full`) whose render
+   thread draws each eye's latest published slot as a world-locked quad (the same screen as today, at the user's size
+   and distance) with `queryDeviceAnchor` per frame. Result: the Immersive space beta in Compositor Services, with
+   passthrough optional, no RealityKit; this alone proves that the layer comes up under SDL's app delegate (the biggest
+   unknown, also true for the RealityKit space).
+2. *Milestone 1, a head-coupled window ("fish tank").* Each game step the host passes the two real eye positions
+   relative to the screen rectangle plus the screen's corner extents; `beginEye` builds the view offset (x/y/z) and the
+   asymmetric frustum from them (generalising the current x-only offset and `mProjection[0][2]` shear). The picture seen
+   through the window then has true parallax and a proper field of view. The game camera stays in control (its yaw,
+   gravity and cuts untouched), so comfort risk is low. New engine API (like `petari_stereo_configure`): a pose struct
+   written atomically by the host, read on the game thread; the published slot echoes the pose it was rendered with
+   so the host draws the quad at that pose (this is the reprojection: between engine frames the quad just stays where
+   it was rendered, so rotation and translation of the head are correct, only the parallax of the content is 1-2
+   frames old).
+3. *Milestone 2, the world around you (high risk).* Head rotation drives the camera. The game camera becomes the "body"
+   and the head pose is an offset on `mView` (`view = inverse(headOffset) * gameView`, translation scaled by a world
+   scale; SM64 uses 1/400, so a ~1.6 m-tall character is ~4 cm... choose by feel). The eye images must cover the compositor's
+   per-eye field of view (about 100 deg, asymmetric): the eye size, the frustum tangents and the render resolution
+   come from `drawable.views[i].tangents` and `textureMap.viewport`, replacing the fixed 16:9 images.
+
+**Risks and unknowns.**
+- *Performance.* A ~90 deg+ per-eye image at a useful pixel density is 2x or more the pixels of the 1080p image that
+  just reached 60 fps; at 1.5-2k per eye the engine will probably be under 60. Milestone 1 can keep the 16:9 image sized to
+  the screen's footprint, so it costs the same as now. Milestone 2 may need much lower density or foveation, which this
+  engine can't do (`isFoveationEnabled = false`, as SM64).
+- *Latency/comfort.* Pose at game-step rate (60 Hz) with a 1-2 frame pipeline; the compositor reprojects only if it gets
+  a sane depth texture and `deviceAnchor`. The engine images carry no depth, so Milestone 2 either needs depth
+  exported (another IOSurface plane per eye; the quad can use a constant depth) or accepts judder on head turns. The game
+  camera itself is hostile to VR: cutscene cameras, forced shakes, camera cuts, and spherical planets that rotate
+  "up" (roll). Needs a comfort model (limit roll, smooth or snap yaw, fade on cuts).
+- *2D HUD, screen-space effects.* The engine draws the 2D HUD, bloom, depth-of-field, water reflections and shadows
+  assuming one 640x456-based framebuffer. In an eye image that spans the whole FOV the HUD sits at the edges of the
+  view or is distorted; it must be drawn into a separate target and placed as a floating pane (SM64 does this with a
+  HUD pane at `hudScale`). Per-eye screen-space effects must also still look right under an asymmetric frustum;
+  unknown until seen.
+- *Frustum culling and LOD* use the camera set in `CameraContext`; with a very wide eye frustum, objects off the original
+  16:9 frustum may be culled or pop (engine camera-side patches probably needed).
+- *Scene/app lifecycle.* Compositor Services needs `ImmersiveSpace`; the app is a UIKit app on SDL's delegate with the
+  game as a UIKit window scene (SDL's CAMetalLayer view, kept alive to pace the engine and to receive controller
+  input). Stage A's `UIHostingSceneDelegate` bridge is the same route, so Stage A's device test answers whether this is
+  possible at all (scene activation, `UIApplicationSupportsMultipleScenes`, window shrink, controllers in a space).
+  SM64's `KeepASceneAlive` (a window must stay up or the app ends) corresponds to the SDL window staying open.
+  Only one immersive space can be open at a time; a `CompositorLayer` space would be a second `ImmersiveSpace` id.
+- *Controller routing.* Same as Stage A (GCController into SDL while the space has the focus); unverified.
+- *Texture format.* The eye images are linear BGRA8 written by Dawn; the layer is `bgra8Unorm_srgb`, so the quad needs
+  an explicit encode (or `_srgb` texture view of the IOSurface) to avoid washed colours.
+
+**Recommendation.** Do Stage A's device test first. If the bridged immersive scene works, do Milestone 0 and 1 together
+(a Compositor Services quad with a head-coupled frustum): moderate work (a Swift render loop based on SM64's, ~300-500
+lines; a pose-in/pose-out engine API, ~100 lines in `Stereo.cpp`/`stereo_bridge.cpp`), no extra render cost, and
+a clear "this looks 3D" payoff. Milestone 2 (world around you) is a research task; decide after seeing 0/1 on device
+and the actual GPU time at larger eye sizes.
