@@ -25,6 +25,28 @@ static float Axis(float v) {
   return std::abs(v) <= dz ? 0 : std::copysign((std::abs(v) - dz) / (1 - dz), v);
 }
 
+// PS VR2 Sense controllers (PRELIMINARY, UNTESTED: the author has no Sense controllers).
+// visionOS 26 reports each Sense controller as its own GCController with productCategory
+// GCProductCategorySpatialController and no extendedGamepad. Inputs come from physicalInputProfile:
+// GCInputThumbstick, GCInputThumbstickButton, GCInputTrigger (L2/R2), GCInputGripButton (L1/R1),
+// and face buttons A/B (right: Cross/Circle) or X/Y (left: Square/Triangle). Handedness is not exposed
+// directly, so a half with A or B is treated as the right one, and one with X or Y as the left.
+static BOOL IsSenseHalf(GCController *c) {
+  return [c.productCategory isEqualToString:GCProductCategorySpatialController];
+}
+static GCControllerButtonInput *SenseButton(GCController *c, NSString *name) {
+  return c ? c.physicalInputProfile.buttons[name] : nil;
+}
+static BOOL SensePressed(GCController *c, NSString *name) {
+  GCControllerButtonInput *b = SenseButton(c, name);
+  return b && (b.pressed || b.value > 0.3f);
+}
+static GCControllerDirectionPad *SenseStick(GCController *c) {
+  if (!c) return nil;
+  return c.physicalInputProfile.dpads[GCInputThumbstick] ?: c.physicalInputProfile.dpads[GCInputLeftThumbstick] ?:
+         c.physicalInputProfile.dpads[GCInputRightThumbstick];
+}
+
 static BOOL IsN64(GCController *c) {
   NSString *cat = c.productCategory ?: @"";
   NSString *name = c.vendorName ?: @"";
@@ -145,9 +167,24 @@ static const float kStickPointerSpeed = 1.2f;  // viewport widths per second at 
 
   GCController *controller = nil;
   GCExtendedGamepad *pad = nil;
+  GCController *senseL = nil, *senseR = nil;
   for (GCController *c in GCController.controllers) {
+    if (IsSenseHalf(c)) continue;
     if (c.extendedGamepad) { controller = c; pad = c.extendedGamepad; break; }
   }
+  if (!pad) {
+    // Merge the two PS VR2 Sense halves into one pad (experimental, untested).
+    for (GCController *c in GCController.controllers) {
+      if (!IsSenseHalf(c)) continue;
+      const BOOL right = SenseButton(c, GCInputButtonA) || SenseButton(c, GCInputButtonB);
+      const BOOL left = SenseButton(c, GCInputButtonX) || SenseButton(c, GCInputButtonY);
+      if (right && !senseR) senseR = c;
+      else if (left && !senseL) senseL = c;
+      else if (!senseL) senseL = c;
+      else if (!senseR) senseR = c;
+    }
+  }
+  const BOOL sense = !pad && (senseL || senseR);
   const BOOL n64 = controller && IsN64(controller);
   const BOOL bJumps = GalaxyVisionSettings.bButtonJumps;
   const float sens = GalaxyVisionSettings.pointerSensitivity;
@@ -206,6 +243,29 @@ static const float kStickPointerSpeed = 1.2f;  // viewport widths per second at 
       }
       [self pollGyro:controller dt:dt sens:sens];
     }
+  } else if (sense) {
+    // PS VR2 Sense (experimental, untested). Left stick moves, right stick aims the pointer.
+    [self sendLean:0.f];
+    if (GCControllerDirectionPad *ls = SenseStick(senseL)) { x = ls.xAxis.value; y = ls.yAxis.value; }
+    if (SensePressed(senseR, GCInputButtonA)) buttons |= kA;                // Cross: jump
+    if (SensePressed(senseR, GCInputButtonB)) buttons |= bJumps ? kA : kB;  // Circle
+    if (SensePressed(senseL, GCInputButtonX) || SensePressed(senseL, GCInputButtonY)) buttons |= kSpin;  // Square/Triangle
+    if (SensePressed(senseR, GCInputTrigger)) { buttons |= kB; [self showPointer]; }  // R2: shoot
+    if (SensePressed(senseL, GCInputTrigger)) buttons |= kZ;                // L2: crouch
+    if (SensePressed(senseL, GCInputGripButton)) buttons |= kC;             // L1: camera reset
+    if (SensePressed(senseR, GCInputButtonMenu) || SensePressed(senseL, GCInputButtonMenu)) buttons |= kPlus;  // Options
+    if (SensePressed(senseL, GCInputButtonOptions) || SensePressed(senseR, GCInputButtonOptions)) buttons |= kMinus;  // Create
+    const BOOL rc = SensePressed(senseL, GCInputThumbstickButton) || SensePressed(senseR, GCInputThumbstickButton);  // L3/R3
+    if (rc && !_recenterHeld) recenterNow = YES;
+    _recenterHeld = rc;
+    if (GCControllerDirectionPad *rs = SenseStick(senseR)) {
+      const float rx = Axis(rs.xAxis.value), ry = Axis(rs.yAxis.value);
+      if (rx != 0 || ry != 0) {
+        [self showPointer];
+        _px = std::clamp(_px + rx * dt * kStickPointerSpeed * sens, 0.f, 1.f);
+        _py = std::clamp(_py - ry * dt * kStickPointerSpeed * sens, 0.f, 1.f);
+      }
+    }
   } else {
     _recenterHeld = _captureHeld = NO;
     [self sendLean:0.f];
@@ -222,6 +282,11 @@ static const float kStickPointerSpeed = 1.2f;  // viewport widths per second at 
   const BOOL gamePaused = galaxypad_engine_game_paused() != 0;
   if (pad && !n64) {
     const BOOL r1 = pad.rightShoulder.pressed;
+    const BOOL fire = r1 && !_r1Held && gamePaused;
+    _r1Held = r1;
+    if (fire && self.onOptionsRequested) { self.onOptionsRequested(); return; }
+  } else if (sense) {
+    const BOOL r1 = SensePressed(senseR, GCInputGripButton);  // R1 on the right Sense: options overlay
     const BOOL fire = r1 && !_r1Held && gamePaused;
     _r1Held = r1;
     if (fire && self.onOptionsRequested) { self.onOptionsRequested(); return; }

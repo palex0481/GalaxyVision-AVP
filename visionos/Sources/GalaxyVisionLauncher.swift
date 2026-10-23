@@ -329,6 +329,7 @@ private struct ControlsTab: View {
           layoutRow("Options", "Pause (Plus) only")
           layoutRow("Create / Share", "Minus")
           layoutRow("N64 pad", "A/B jump, Z crouch, L camera, R spin, C buttons nudge the pointer, C-down shoots, Capture recenters (hold Capture + C-down to nudge down), Start pauses, Start + Capture held opens the options screen")
+          layoutRow("PS VR2 Sense", "Experimental and untested: same layout as a DualSense, split across the two controllers (R1 is the right grip, L1 the left grip)")
         }
       }
       .navigationTitle("Controls")
