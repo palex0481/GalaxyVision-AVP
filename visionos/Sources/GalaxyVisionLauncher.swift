@@ -111,9 +111,15 @@ struct StereoSettingsSection: View {
   var onChange: (() -> Void)? = nil
   @AppStorage(GVKeyStereoDepth) private var depth = 1.0
   @AppStorage(GVKeyStereoConvergence) private var convergence = 1200.0
+  @AppStorage(GVKeyStereoResolution) private var resolution = 720
 
   var body: some View {
     Section {
+      Picker("Stereo resolution", selection: $resolution) {
+        Text("Low (960\u{00D7}540)").tag(540)
+        Text("Medium (1280\u{00D7}720)").tag(720)
+        Text("High (1920\u{00D7}1080)").tag(1080)
+      }
       VStack(alignment: .leading) {
         Text("Depth (eye separation): \(depth, specifier: "%.2f")x")
         Slider(value: $depth, in: 0...2, step: 0.05)
@@ -126,10 +132,11 @@ struct StereoSettingsSection: View {
     } header: {
       Text("Stereoscopic window (beta)")
     } footer: {
-      Text("Depth 0 is flat; higher separates the eyes more. Convergence is how far from the camera, in game units, things appear at the screen's surface: nearer values push more of the scene behind the window, farther values bring it out of it. The game HUD stays on the screen plane. Settings apply live from the options screen. If the stereo view cannot start, the flat window is used and a message says why; the trace is in Library/Caches/galaxyvision-trace.log.")
+      Text("Stereo resolution is the size the game is drawn at for each eye (it is drawn twice, so a lower size runs faster and smoother; High looks sharpest and runs slowest). Depth 0 is flat; higher separates the eyes more. Convergence is how far from the camera, in game units, things appear at the screen's surface: nearer values push more of the scene behind the window, farther values bring it out of it. The game HUD stays on the screen plane. Settings apply live from the options screen. If the stereo view cannot start, the flat window is used and a message says why; the trace is in Library/Caches/galaxyvision-trace.log.")
     }
     .onChange(of: depth) { _, _ in onChange?() }
     .onChange(of: convergence) { _, _ in onChange?() }
+    .onChange(of: resolution) { _, _ in onChange?() }
   }
 }
 

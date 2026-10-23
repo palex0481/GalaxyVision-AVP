@@ -71,7 +71,14 @@ Depth and convergence sliders: `gv.stereoDepth` (0-2, default 1) and `gv.stereoC
 
 - Engine (`Stereo.cpp`): per game step, update/calcAnim once, then draw the scene twice (left, right) with a view
   offset plus projection shear (zero parallax at the convergence distance). SmoothMotion is off while stereo is on.
-  Render scale is 3x so each eye is 1920x1080. Present modes in `Frame::stereoEye`: 1 left (eye image only),
+  Render size per eye is the "Stereo resolution" option (`gv.stereoResolution`: 540 Low, 720 Medium = default,
+  1080 High; applied live via `galaxypad_engine_stereo_set_resolution`): render scale = height / 456, so the EFB is
+  960x540 / 1280x720 / 1920x1080. (It used to be a fixed 3x = 2432x1368 per eye, drawn twice; the first device trace
+  showed ~31 fps in gameplay: game thread 17.5 ms of CPU work + ~13 ms waiting for the GPU.) The eye images stay
+  1920x1080; the bridge's copy pass scales the picture up into them. Env override: `PETARI_STEREO_HEIGHT`.
+  Pulling the trace from the headset: `devicectl device copy from ... --domain-type appDataContainer
+  --domain-identifier com.example.galaxyvision --source Library/Caches/galaxyvision-trace.log`.
+  Present modes in `Frame::stereoEye`: 1 left (eye image only),
   2 right (eye image + window present, keeps vsync pacing), 3 mono (both eyes, used when the view stage isn't ready).
 - Bridge (`stereo_bridge.cpp`, `patch_aurora_stereo.py`): per eye, 4 IOSurfaces (BGRA 1920x1080) imported into Dawn
   via SharedTextureMemoryIOSurface (+ SharedFenceMTLSharedEvent). The engine renders into them; the latest slot and a

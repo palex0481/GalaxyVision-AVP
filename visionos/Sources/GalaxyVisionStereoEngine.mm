@@ -6,6 +6,7 @@ extern "C" {
 int galaxypad_engine_started(void);
 void galaxypad_engine_stereo_configure(int enabled, float depth, float convergence);
 void galaxypad_engine_stereo_open(int open);
+void galaxypad_engine_stereo_set_resolution(int height);
 int galaxypad_engine_stereo_status(void);
 const char *galaxypad_engine_stereo_error(void);
 void *galaxypad_engine_stereo_surface(int eye, int slot);
@@ -27,6 +28,7 @@ int galaxypad_engine_stereo_latest(int eye, uint64_t *sequence);
   galaxypad_engine_stereo_configure(enabled ? 1 : 0, depth, convergence);
 }
 + (void)applySavedSettings {
+  galaxypad_engine_stereo_set_resolution((int)GalaxyVisionSettings.stereoResolution);
   [self applyEnabled:(self.status == 1 && GalaxyVisionSettings.stereoSelected)
                depth:GalaxyVisionSettings.stereoDepth
          convergence:GalaxyVisionSettings.stereoConvergence];
