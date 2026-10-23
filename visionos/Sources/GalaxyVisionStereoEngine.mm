@@ -50,8 +50,11 @@ static BOOL sSharpActive;
   // otherwise it scales the picture across the whole eye image itself (the plain path).
   const BOOL sharp = GalaxyVisionSettings.stereoSharp && !sSharpFailed && height < 1080;
   galaxypad_engine_stereo_set_rect(sharp ? (int)height : 0);
-  [self applyEnabled:(self.status == 1 && GalaxyVisionSettings.stereoSelected)
-               depth:GalaxyVisionSettings.stereoDepth
+  // Immersive space: "Screen depth (3D)" off means depth 0, which the engine draws once (mono) for both eyes.
+  const float depth = (GalaxyVisionSettings.immersiveSelected && !GalaxyVisionSettings.immersiveDepth) ? 0.0f
+                                                                                                         : GalaxyVisionSettings.stereoDepth;
+  [self applyEnabled:(self.status == 1 && GalaxyVisionSettings.bridgeSelected)
+               depth:depth
          convergence:GalaxyVisionSettings.stereoConvergence];
 }
 @end

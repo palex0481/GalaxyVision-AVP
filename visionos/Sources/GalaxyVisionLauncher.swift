@@ -105,6 +105,52 @@ private struct SavingTab: View {
   }
 }
 
+/// Immersive space (beta): screen size and distance (live, also while the space is open), "Screen depth (3D)".
+struct ImmersiveSettingsSection: View {
+  var inGame: Bool
+  var onChange: (() -> Void)? = nil
+  @AppStorage(GVKeyImmersiveDepth) private var depth3D = false
+  @AppStorage(GVKeyImmersiveSize) private var size = 6.0
+  @AppStorage(GVKeyImmersiveDistance) private var distance = 3.5
+  @AppStorage(GVKeyStereoDepth) private var depth = 1.0
+  @AppStorage(GVKeyStereoResolution) private var resolution = 720
+  @AppStorage(GVKeyStereoSharp) private var sharp = true
+
+  var body: some View {
+    Section {
+      VStack(alignment: .leading) {
+        Text("Screen size (width): \(size, specifier: "%.1f") m")
+        Slider(value: $size, in: 2...14, step: 0.5)
+      }
+      VStack(alignment: .leading) {
+        Text("Screen distance: \(distance, specifier: "%.1f") m")
+        Slider(value: $distance, in: 2...8, step: 0.25)
+      }
+      Button("Reset size and distance") { size = 6.0; distance = 3.5 }
+      Toggle("Screen depth (3D)", isOn: $depth3D)
+      if depth3D {
+        VStack(alignment: .leading) {
+          Text("Depth (eye separation): \(depth, specifier: "%.2f")x")
+          Slider(value: $depth, in: 0.05...2, step: 0.05)
+        }
+      }
+      Picker("Picture resolution", selection: $resolution) {
+        Text("Low (960\u{00D7}540)").tag(540)
+        Text("Medium (1280\u{00D7}720)").tag(720)
+        Text("Balanced (1600\u{00D7}900)").tag(900)
+        Text("High (1920\u{00D7}1080)").tag(1080)
+      }
+      Toggle("Sharp upscaling (MetalFX)", isOn: $sharp)
+    } header: {
+      Text("Immersive space (beta)")
+    } footer: {
+      Text("The game is a big flat screen floating in space; the screen is at eye height straight ahead. Comfort default: 6 m wide at 3.5 m. Size and distance change live (also while you play). Screen depth (3D) off draws the game once and shows the same picture to both eyes (fastest); on draws both eyes for real depth, like the Stereoscopic window. Picture resolution is the size the game is drawn at (High is sharpest and slowest); Sharp upscaling (MetalFX) enlarges Low, Medium and Balanced with Apple\u{2019}s upscaler. The game window shrinks to a small panel while you are in space and grows back when you pause and press R1 / RB for the options; its \u{201C}Exit immersive space\u{201D} button leaves the space. If the space cannot start, the flat window is used and a message says why.")
+    }
+    .onChange(of: depth3D) { _, _ in onChange?() }
+    .onChange(of: depth) { _, _ in onChange?() }
+  }
+}
+
 /// Stereoscopic window tuning: eye separation and convergence (applied live while playing).
 struct StereoSettingsSection: View {
   var inGame: Bool
@@ -245,10 +291,26 @@ private struct ViewModeTab: View {
               if viewMode == "stereo" { Image(systemName: "checkmark.circle.fill").foregroundStyle(.tint) }
             }
           }
-          comingSoon("Immersive", "The game around you in an immersive space.")
+          Button { viewMode = "immersive" } label: {
+            HStack {
+              VStack(alignment: .leading) {
+                HStack(spacing: 6) {
+                  Text("Immersive space")
+                  Text("BETA").font(.caption2.bold()).padding(.horizontal, 6).padding(.vertical, 2)
+                    .background(.orange.opacity(0.85), in: Capsule())
+                }
+                Text("A big screen floating in outer space: stars, a nebula, a distant galaxy.").font(.caption).foregroundStyle(.secondary)
+              }
+              Spacer()
+              if viewMode == "immersive" { Image(systemName: "checkmark.circle.fill").foregroundStyle(.tint) }
+            }
+          }
+          comingSoon("Immersive 3D", "The game\u{2019}s world around you in 3D, like SM64-Vision\u{2019}s immersive mode.")
         }
         if viewMode == "stereo" {
           StereoSettingsSection(inGame: false)
+        } else if viewMode == "immersive" {
+          ImmersiveSettingsSection(inGame: false)
         } else {
           AmbientGlowSection()
         }
@@ -416,7 +478,10 @@ private struct GraphicsTab: View {
         if inGame && viewMode == "stereo" {
           StereoSettingsSection(inGame: true, onChange: onDisplayChange)
         }
-        if inGame && viewMode != "stereo" {
+        if inGame && viewMode == "immersive" {
+          ImmersiveSettingsSection(inGame: true, onChange: onDisplayChange)
+        }
+        if inGame && viewMode == "flat" {
           AmbientGlowSection()
         }
       }

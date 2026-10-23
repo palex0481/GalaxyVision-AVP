@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		06BC8274FBE80663DD7DDF85 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A38CFE0898484C710D2E470A /* SwiftUI.framework */; };
 		071B120336591CBBDEF09F19 /* GalaxyVisionStereoEngine.mm in Sources */ = {isa = PBXBuildFile; fileRef = 30E6400E31BCDBC0601C43F5 /* GalaxyVisionStereoEngine.mm */; };
+		1366F28A77C8A5E7564ABFB0 /* GalaxyVisionImmersive.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06AEAB861C3285B455E6F1FF /* GalaxyVisionImmersive.swift */; };
 		25681A4AD4DB913AF02F0007 /* GalaxyPadEngine.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 2D1E6B43CB0E6A2FE52F016C /* GalaxyPadEngine.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		2AC70771104C64A8D9F57A70 /* UIKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 9EE17E7F1726D3AB3488F241 /* UIKit.framework */; };
 		30661FD1C1B2F23CFBEC9E33 /* GameController.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 4F1111C9925ABE66F81767D4 /* GameController.framework */; };
@@ -44,6 +45,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		06AEAB861C3285B455E6F1FF /* GalaxyVisionImmersive.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GalaxyVisionImmersive.swift; sourceTree = "<group>"; };
 		14A65D1EA2E79D30DFF44335 /* RealityKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = RealityKit.framework; path = System/Library/Frameworks/RealityKit.framework; sourceTree = SDKROOT; };
 		26C89ABD504C8C0FB38B7C50 /* GalaxyVisionSettings.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = GalaxyVisionSettings.mm; sourceTree = "<group>"; };
 		29BE28FDC4F9A5B29E608820 /* NativeStereo.usda */ = {isa = PBXFileReference; path = NativeStereo.usda; sourceTree = "<group>"; };
@@ -133,6 +135,7 @@
 				F4950FF4E5FBFE527A5CA472 /* GalaxyVision-Bridging-Header.h */,
 				C8BC1635F6A1769F1325B72A /* GalaxyVisionController.h */,
 				4BACAFC35890EA3401E27C29 /* GalaxyVisionController.mm */,
+				06AEAB861C3285B455E6F1FF /* GalaxyVisionImmersive.swift */,
 				B84CEB9E7B76B15665EB1079 /* GalaxyVisionLauncher.swift */,
 				AB9AD67F3258FE8D502722A5 /* GalaxyVisionSettings.h */,
 				26C89ABD504C8C0FB38B7C50 /* GalaxyVisionSettings.mm */,
@@ -252,6 +255,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				68A6B83A23EFBEBAA13C42F3 /* GalaxyVisionController.mm in Sources */,
+				1366F28A77C8A5E7564ABFB0 /* GalaxyVisionImmersive.swift in Sources */,
 				BDBC5052BB7F5FE28E816DFC /* GalaxyVisionLauncher.swift in Sources */,
 				A2DBDA356E5FCC2E946C6551 /* GalaxyVisionSettings.mm in Sources */,
 				38991F74EEE5F7A9E3215686 /* GalaxyVisionStereo.swift in Sources */,

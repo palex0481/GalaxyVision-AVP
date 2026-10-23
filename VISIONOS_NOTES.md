@@ -167,3 +167,45 @@ A switch in the launcher's View tab (flat mode) and the in-game Graphics tab: **
   black when no new sample arrives for 0.7 s (VI black).
 - Pointer note: with the picture scaled, window-pointer (not controller) positions are off by the scale while the glow is on.
 - Unverified on device.
+
+## Immersive space (beta): a big flat screen in outer space
+
+View tab > **Immersive space** (BETA), next to Flat window and Stereoscopic window (the old "Immersive: coming soon" row
+now reads "Immersive 3D: coming soon", a placeholder for the separate 3D mode, see the assessment below). Settings keys:
+`gv.viewMode = "immersive"`, `gv.immersiveSize` (screen width in metres, 2-14, default 6), `gv.immersiveDistance`
+(2-8 m, default 3.5), `gv.immersiveDepth` ("Screen depth (3D)", default off). The screen is straight ahead at eye height
+(1.5 m). Picture resolution / Sharp upscaling / depth strength reuse the stereo keys (`gv.stereoResolution`,
+`gv.stereoSharp`, `gv.stereoDepth`). Size and distance apply live, also in the in-game options (Graphics tab).
+
+- **Hosting (new, UNVERIFIED on device).** visionOS 26 UIKit scene bridging: `GVImmersiveSceneDelegate`
+  (`UIHostingSceneDelegate`, `GalaxyVisionImmersive.swift`) declares `ImmersiveSpace(id:)` (`.immersionStyle(.full)`);
+  `main.mm` activates it with `UISceneSessionActivationRequest(hostingDelegateClass:id:)` once the stereo bridge is up
+  (`GVOpenImmersive`). `project.yml` / Info.plist gained a `UISceneSessionRoleImmersiveSpaceApplication` configuration
+  naming that delegate class, and **`UIApplicationSupportsMultipleScenes` is now true** (needed to open a second scene; the
+  game window is still one scene with the same `GalaxyPad` configuration; risk: the system could offer a second
+  game window, which the engine does not support).
+- **What is in the space.** A RealityKit `RealityView`: an inside-out star sphere (radius 100 m, unlit) textured with a
+  4096x2048 equirectangular sky painted at start by `GVSpaceSky` (CoreGraphics, seeded and deterministic: ~25k stars in
+  four colour classes, a Milky Way band, three nebulae, a spiral galaxy; about 0.27 s on the Mac, checked as an image
+  there), a particle emitter of slow drifting specks (30 s life, 14x7x14 m box around the player), and the game
+  screen: the same `GVStereoRenderer.screen` entity as the Stereoscopic window (engine eye IOSurfaces -> two
+  `LowLevelTexture`s -> NativeStereo ShaderGraph material) plus a thin black bezel child. Nothing was removed from or
+  changed in the stereo path except that `fit()` is called with the user's size.
+- **Screen depth (3D).** Off (default): `GVStereoEngine.applySavedSettings` sends depth 0 and the engine
+  (`Stereo::beginEyes`, new `gDepth < 0.005` test) draws each step once through its existing mono path, which publishes
+  the same picture to both eye images, so the screen is flat and cheaper than stereo. On: both eyes are drawn with the
+  stereo depth setting. (The Stereoscopic window with depth 0 now also takes the mono path; same picture, less work.)
+- **Controls and pause/options.** The SDL game window is kept (it paces the engine, takes the controller and hosts
+  the overlay); when the space opens it is requested to shrink to 560x340 (`requestGeometryUpdate(.Vision(size:))`) and
+  shows a small black control panel (Exit immersive space; when the space is closed: Enter immersive space / Use the
+  flat window). R1 (or the other combos) opens the existing options overlay in that window; the window is
+  requested back to its previous size while the overlay is up and shrunk again on Resume (`GVImmersive.setOverlay`). So
+  the options are used in the window that sits in the room beside the screen; the paused game stays visible on the big
+  screen. Closing the window ends the game (as before).
+- **Failure.** If the space cannot be requested, or the renderer fails, the panel is removed, the bridge is closed and
+  the flat window is used with a toast saying why.
+- **Not done / ideas.** Glow tinting the surroundings; a head-locked or Digital-Crown recentre of the screen; options
+  inside the space itself (a SwiftUI attachment); real star geometry instead of the 4096 px sky texture (stars are a
+  little soft at 40 px/deg); passthrough dimming levels.
+- Unverified on device: that the bridged scene activates under the SDL app delegate, that the window shrinks, that the
+  sky/particles/bezel look right, the frame rate in the space.
