@@ -298,3 +298,22 @@ steering by tilt (`motionControlShown(Ray)`, 100 ms hint). Two gaps made it fail
 
 Engine tests: `native/tests/input_tests.cpp` (standalone input build, 722 checks pass), including a stick at
 85% and a pad lean for the tutorial's turn-left.
+
+## Megaleg crash: peek fix (Oct 23, 2026; built and installed, not yet replayed on the headset)
+- Cause (from three device crash logs, same stack each time): not memory. `GXPeekARGB` in the engine called `OSPanic`
+  when asked for a pixel outside the token-time capture. The game's `BrightObj::checkVisible` can sample the row just
+  past the bottom edge (NDC y = -1 gives y = 456 on a 456-row framebuffer). No jetsam or EXC_RESOURCE reports existed.
+- Fix (engine `native/gx/efb_peek.cpp`, `efb_snapshot.cpp`): an out-of-range peek now reads the nearest edge pixel; a
+  peek with no capture at all answers "not bright" (alpha 0, far depth). Valid peeks are unchanged. Game code
+  (`BrightObj.cpp`) is untouched. Each odd peek is counted and logged at most once every 5 s:
+  `Petari peek warning: GX EFB peek at (x,y) ... answered with ... (N such peeks so far)`.
+- Memory line: `Petari memory: footprint X MiB (peak Y MiB), limit headroom Z MiB` (task_vm_info `phys_footprint`), about every
+  5 s, printed from the frame trace in `frame_seam.cpp`.
+- Increased-memory-limit entitlement (`com.apple.developer.kernel.increased-memory-limit`): tried via `project.yml`
+  and reverted. The device build failed: Xcode has no account signed in ("No Accounts"), so it cannot update the
+  provisioning profile, and the current wildcard profile lacks the capability. To retry: sign in to Xcode > Settings >
+  Accounts, enable "Increased Memory Limit" for com.example.galaxyvision on developer.apple.com, then add
+  `entitlements: {path: GalaxyVision.entitlements, properties: {com.apple.developer.kernel.increased-memory-limit: true}}`
+  to the GalaxyVision target in `project.yml`.
+- To confirm: replay Megaleg in Stereoscopic, pull `galaxyvision-trace.log`, and look for `Petari peek` lines (it means
+  the old crash path was hit and survived) and the `Petari memory` lines.
