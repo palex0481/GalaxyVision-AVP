@@ -57,6 +57,26 @@ static const float kStickPointerSpeed = 1.2f;  // viewport widths per second at 
   CFTimeInterval _nudgeStartX, _nudgeStartY;
   // gyro
   GCController *_motionOwner;
+  // options combo
+  CFTimeInterval _comboStart;
+  BOOL _comboFired;
+  BOOL _suspended;
+}
+
+- (BOOL)inputSuspended { return _suspended; }
+- (void)setInputSuspended:(BOOL)suspended {
+  if (suspended == _suspended) return;
+  _suspended = suspended;
+  // Resuming with the combo buttons still down must not reopen the overlay: wait for release.
+  _comboStart = 0;
+  _comboFired = YES;
+  _lastButtons = ~0u;  // force the next poll to send the current state
+  if (suspended) galaxypad_engine_input(0, 0, 0, 0, -1.0f, -1.0f);
+}
+
+- (void)applyDisplaySettingsNow {
+  _engineSettingsApplied = NO;
+  [self applyEngineSettings];
 }
 
 + (instancetype)shared {
@@ -101,6 +121,7 @@ static const float kStickPointerSpeed = 1.2f;  // viewport widths per second at 
 - (void)poll {
   if (!galaxypad_engine_started()) return;
   [self applyEngineSettings];
+  if (_suspended) return;  // options overlay up: the game gets nothing
 
   const CFTimeInterval now = CACurrentMediaTime();
   const float dt = _lastTime > 0 ? (float)std::clamp(now - _lastTime, 0.0, 0.05) : 0.f;
@@ -173,6 +194,24 @@ static const float kStickPointerSpeed = 1.2f;  // viewport widths per second at 
     _nudgeDirX = _nudgeDirY = 0;
   }
   if (recenterNow) [self recenter];
+
+  // Options combo: Options + Create (PlayStation / Xbox pads) or Start + Capture (N64 pad), held 0.5 s.
+  BOOL combo = NO;
+  if (pad) {
+    combo = n64 ? (pad.buttonMenu.pressed && _captureHeld)
+                : (pad.buttonMenu.pressed && pad.buttonOptions.pressed);
+  }
+  if (combo) {
+    buttons &= ~(kPlus | kMinus);  // do not feed the combo itself to the game
+    if (_comboStart == 0) _comboStart = now;
+    if (!_comboFired && now - _comboStart >= 0.5) {
+      _comboFired = YES;
+      if (self.onOptionsRequested) { self.onOptionsRequested(); return; }
+    }
+  } else {
+    _comboStart = 0;
+    _comboFired = NO;
+  }
 
   const BOOL visible = pointerMode == 1 ? YES : (pointerMode == 2 ? NO : _pointerShown);
   const int pv = visible ? 1 : 0;

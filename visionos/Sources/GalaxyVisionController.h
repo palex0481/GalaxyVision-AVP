@@ -6,6 +6,13 @@
 @interface GalaxyVisionController : NSObject
 + (instancetype)shared;
 - (void)start;
+// Called on the main thread when the pad's options combo (Options + Create, or N64 Start + Capture)
+// has been held for half a second.
+@property(nonatomic, copy) void (^onOptionsRequested)(void);
+// While YES (the in-game options overlay is up) nothing is forwarded to the game.
+@property(nonatomic) BOOL inputSuspended;
+// Re-applies aspect ratio / smooth motion to the running engine.
+- (void)applyDisplaySettingsNow;
 @end
 
 // GalaxyPadEngine.framework exports (ref/galaxypad-engine native/app/engine_entry.mm).

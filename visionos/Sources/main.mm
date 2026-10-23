@@ -45,6 +45,97 @@ static BOOL GVEngineHost(void) {
 }
 @end
 
+// --- In-game options overlay and save reminder -------------------------------------------------
+// The engine cannot return to the launcher mid-game (its SDL window and render loop live until the
+// process exits), so the options are an overlay window over the game: a SwiftUI view in a second
+// UIWindow of the same scene, shown by the pad's options combo. The game is held on its frame
+// (galaxypad_engine_pause) and gets no input while it is up.
+static UIWindowScene *sGameScene;
+static UIWindow *sOverlayWindow;
+static UIWindow *sToastWindow;
+static BOOL sSceneResigned;
+
+static void GVHideOverlay(void) {
+  if (!sOverlayWindow) return;
+  sOverlayWindow.hidden = YES;
+  sOverlayWindow = nil;
+  galaxypad_engine_pause(0);
+  GalaxyVisionController.shared.inputSuspended = NO;
+  for (UIWindow *w in sGameScene.windows) {
+    if (!w.hidden && w != sToastWindow) { [w makeKeyWindow]; break; }
+  }
+}
+
+static void GVShowOverlay(void) {
+  if (sOverlayWindow || !sGameScene) return;
+  GalaxyVisionController.shared.inputSuspended = YES;
+  galaxypad_engine_pause(1);
+  UIViewController *content = [GVOverlayFactory makeViewControllerOnDisplayChange:^{
+    [GalaxyVisionController.shared applyDisplaySettingsNow];
+  } onResume:^{ GVHideOverlay(); }];
+  UIWindow *window = [[UIWindow alloc] initWithWindowScene:sGameScene];
+  window.windowLevel = UIWindowLevelAlert + 10;
+  window.rootViewController = content;
+  sOverlayWindow = window;
+  [window makeKeyAndVisible];
+}
+
+// Saving: the engine only saves through its own save sequence (startGameDataSaveSequence: story and
+// Power Star autosaves, Pause > "Save your progress and quit"), which runs on the game thread over
+// several frames with on-screen messages. It cannot be started safely from a lifecycle callback
+// (the game is paused and the process may be suspended before it finishes), and GameData.bin is
+// never written directly. So: remember that the scene lost focus and, when it comes back, remind
+// the player that closing the window does not save.
+static void GVShowSaveToast(void) {
+  if (sToastWindow || !sGameScene) return;
+  UIWindow *window = [[UIWindow alloc] initWithWindowScene:sGameScene];
+  window.windowLevel = UIWindowLevelAlert + 5;
+  window.userInteractionEnabled = NO;
+  window.backgroundColor = UIColor.clearColor;
+  UIViewController *vc = [[UIViewController alloc] init];
+  vc.view.backgroundColor = UIColor.clearColor;
+  UIVisualEffectView *panel =
+      [[UIVisualEffectView alloc] initWithEffect:[UIBlurEffect effectWithStyle:UIBlurEffectStyleSystemMaterialDark]];
+  panel.layer.cornerRadius = 20;
+  panel.clipsToBounds = YES;
+  UILabel *label = [[UILabel alloc] init];
+  label.text = @"Closing the window does not save.\nUse Pause \u203A \u201CSave your progress and quit\u201D to save.";
+  label.numberOfLines = 0;
+  label.textAlignment = NSTextAlignmentCenter;
+  label.textColor = UIColor.whiteColor;
+  label.font = [UIFont preferredFontForTextStyle:UIFontTextStyleHeadline];
+  [panel.contentView addSubview:label];
+  [vc.view addSubview:panel];
+  CGFloat width = MIN(560, vc.view.bounds.size.width - 40);
+  panel.frame = CGRectMake(0, 0, width, 96);
+  label.frame = CGRectInset(panel.bounds, 16, 12);
+  panel.autoresizingMask = UIViewAutoresizingFlexibleLeftMargin | UIViewAutoresizingFlexibleRightMargin |
+                           UIViewAutoresizingFlexibleTopMargin;
+  panel.center = CGPointMake(CGRectGetMidX(vc.view.bounds), CGRectGetMaxY(vc.view.bounds) - 80);
+  window.rootViewController = vc;
+  window.hidden = NO;
+  sToastWindow = window;
+  dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(8 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+    window.hidden = YES;
+    if (sToastWindow == window) sToastWindow = nil;
+  });
+}
+
+static void GVObserveGameScene(UIWindowScene *scene) {
+  sGameScene = scene;
+  GalaxyVisionController.shared.onOptionsRequested = ^{ GVShowOverlay(); };
+  NSNotificationCenter *nc = NSNotificationCenter.defaultCenter;
+  void (^resigned)(NSNotification *) = ^(NSNotification *n) { sSceneResigned = YES; };
+  [nc addObserverForName:UISceneWillDeactivateNotification object:scene queue:NSOperationQueue.mainQueue usingBlock:resigned];
+  [nc addObserverForName:UISceneDidEnterBackgroundNotification object:scene queue:NSOperationQueue.mainQueue usingBlock:resigned];
+  [nc addObserverForName:UISceneDidActivateNotification object:scene queue:NSOperationQueue.mainQueue
+              usingBlock:^(NSNotification *n) {
+    if (!sSceneResigned) return;
+    sSceneResigned = NO;
+    if (galaxypad_engine_started() && !sOverlayWindow) GVShowSaveToast();
+  }];
+}
+
 @interface GalaxyPadSceneDelegate : UIResponder <UIWindowSceneDelegate>
 @property(nonatomic, strong) UIWindow *window;
 @end
@@ -59,6 +150,7 @@ static void GVHandOffToEngine(UIScene *scene, UISceneSession *session, UISceneCo
   scene.delegate = sEngineSceneDelegate;
   [sEngineSceneDelegate scene:scene willConnectToSession:session options:options];
   [GalaxyVisionController.shared start];
+  if ([scene isKindOfClass:UIWindowScene.class]) GVObserveGameScene((UIWindowScene *)scene);
 }
 
 - (void)scene:(UIScene *)scene willConnectToSession:(UISceneSession *)session options:(UISceneConnectionOptions *)options {

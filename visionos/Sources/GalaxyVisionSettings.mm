@@ -40,7 +40,13 @@ static NSUserDefaults *Defaults(void) { return NSUserDefaults.standardUserDefaul
 + (BOOL)gyroInvertX { return [Defaults() boolForKey:GVKeyGyroInvertX]; }
 + (BOOL)gyroInvertY { return [Defaults() boolForKey:GVKeyGyroInvertY]; }
 + (BOOL)bButtonJumps { return [Defaults() boolForKey:GVKeyBButtonJumps]; }
-+ (double)renderScale { return [Defaults() doubleForKey:GVKeyRenderScale]; }
+// Only the reduced scales (2x, 3x of the game's framebuffer, below the 2560x1440 headset window)
+// are offered. Anything above (the removed 4x option, or a stale value) means native: a
+// framebuffer larger than the window's drawable broke the window's aspect ratio.
++ (double)renderScale {
+  const double v = [Defaults() doubleForKey:GVKeyRenderScale];
+  return (v >= 1.0 && v <= 3.0) ? v : 0.0;
+}
 + (NSInteger)aspect { return [Defaults() integerForKey:GVKeyAspect]; }
 + (BOOL)smoothMotion { return [Defaults() boolForKey:GVKeySmoothMotion]; }
 
@@ -50,10 +56,17 @@ static NSUserDefaults *Defaults(void) { return NSUserDefaults.standardUserDefaul
   // Supersampling: the engine renders at N x the game's framebuffer when PETARI_RENDER_SCALE
   // is set (VISetFrameBufferScale). Unset keeps the engine's own choice (screen pixels).
   const double scale = self.renderScale;
-  if (scale >= 1.0 && scale <= 8.0) {
+  if (scale >= 1.0 && scale <= 3.0) {
     char text[32];
     snprintf(text, sizeof text, "%.2f", scale);
     setenv("PETARI_RENDER_SCALE", text, 1);
+    // Diagnostics for a non-default scale: the engine's size trace (surface / EFB / XFB / viewport)
+    // goes to Library/Caches/galaxyvision-trace.log in the app container.
+    setenv("PETARI_TRACE_BOOT", "1", 1);
+    NSURL *caches = [NSFileManager.defaultManager URLsForDirectory:NSCachesDirectory inDomains:NSUserDomainMask].firstObject;
+    NSString *log = [caches URLByAppendingPathComponent:@"galaxyvision-trace.log"].path;
+    freopen(log.fileSystemRepresentation, "w", stderr);
+    setvbuf(stderr, NULL, _IOLBF, 0);
   } else {
     unsetenv("PETARI_RENDER_SCALE");
   }

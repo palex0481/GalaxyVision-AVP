@@ -12,7 +12,7 @@ extern NSString *const GVKeyGyroAim;            // Bool, PS pads with motion onl
 extern NSString *const GVKeyGyroInvertX;        // Bool
 extern NSString *const GVKeyGyroInvertY;        // Bool
 extern NSString *const GVKeyBButtonJumps;       // Bool: Circle / N64 B jump (Switch style) instead of Wii B
-extern NSString *const GVKeyRenderScale;        // Double: 0 = engine default, else PETARI_RENDER_SCALE (2...4)
+extern NSString *const GVKeyRenderScale;        // Double: 0 = native (engine default), else PETARI_RENDER_SCALE 2 or 3 (below native)
 extern NSString *const GVKeyAspect;             // Int: -1 leave engine setting, 0 = 4:3, 1 = 16:9
 extern NSString *const GVKeySmoothMotion;       // Bool (only has an effect on >=110 Hz displays)
 
