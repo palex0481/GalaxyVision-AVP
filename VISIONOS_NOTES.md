@@ -91,22 +91,6 @@ Depth and convergence sliders: `gv.stereoDepth` (0-2, default 1) and `gv.stereoC
 - Known: the shear sign / depth direction is unverified on device; home menu / RmlUi overlays only render to the
   flat window (hidden behind the stereo view); no HUD depth option; ImGui not in the eye images.
 
-## Stereoscopic window: screen position controls (addition, device build compiled, not tested on the headset)
-
-The stereo screen is ONE window: the SDL game window, with the RealityKit view (`GVStereoView`, a `UIHostingController`)
-added as a subview of its root view; the 16:9 plane lives inside that view. So the system grab bar and corner handles move
-and resize the window and the picture together. The controls below move the plane *inside* the window.
-- Settings (View tab > Stereoscopic window, and the in-game options Graphics tab): `gv.stereoScreenScale` (0.25-1.5, 1 = the old
-  fit), `gv.stereoScreenX` / `gv.stereoScreenY` (-0.5..0.5 of the window width / height), `gv.stereoScreenZ` (-0.2..0.3 m
-  towards you), plus a reset button. Defaults are the old behaviour (scale 1, no shift).
-- `GVStereoRenderer.fit(...)` takes them as optional arguments (defaults = unchanged); `GVStereoView` reads them with
-  `@AppStorage`. No engine or rendering change; the eye images and the material are untouched.
-- Limits: the options screen hides the 3D view (so 2D never sits behind the plane), so a change shows on Resume. Whether the
-  window clips a picture that is larger than the window or moved past its edge, or one pushed far in front of it, is untested.
-- Not built: a drag handle on the picture (touches go to the SDL view, not the RealityKit view) and changing the window's own
-  size from the app (`requestGeometryUpdate` with the Vision preferences was used by the removed Immersive mode and was never
-  confirmed to work on the game window).
-
 ## FPS counter (testing)
 - `main.mm` (`GVFPSTick`): a small non-interactive `UILabel` subview of the game window's root view (top-right; not a
   UIWindow), refreshed every 0.5 s. Flat: delta of `galaxypad_engine_presented_frames()`. Stereo: that counter runs at
