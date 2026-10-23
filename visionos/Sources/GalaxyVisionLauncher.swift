@@ -22,7 +22,7 @@ final class GVLauncherFactory: NSObject {
 /// The in-game options overlay (controller combo while playing): live settings, a save reminder.
 @objc(GVOverlayFactory)
 final class GVOverlayFactory: NSObject {
-  /// - onDisplayChange: aspect ratio / smooth motion changed; apply them to the running engine.
+  /// - onDisplayChange: aspect ratio changed; apply it to the running engine.
   /// - onResume: close the overlay and unpause the game.
   /// - onQuit: stop the game and close GalaxyVision (only after the player confirms in the overlay).
   @objc static func makeViewController(onDisplayChange: @escaping () -> Void,
@@ -91,7 +91,7 @@ private struct SavingTab: View {
           Text("The game cannot return to the launcher while it runs. Quitting closes GalaxyVision; open it again from Home View to see the launcher. Anything since your last save is lost.")
         }
         Section("Applies right away") {
-          Text("Pointer, gyro and button settings (Controls tab), aspect ratio and smooth motion (Graphics tab; the aspect ratio is saved by the game and fully applies on the next start).")
+          Text("Pointer, gyro and button settings (Controls tab), aspect ratio (Graphics tab; the aspect ratio is saved by the game and fully applies on the next start).")
         }
       }
       .navigationTitle("Saving")
@@ -507,12 +507,11 @@ private struct AmbientGlowSection: View {
 // MARK: - Graphics
 
 private struct GraphicsTab: View {
-  /// Shown over the running game: aspect ratio and smooth motion apply right away.
+  /// Shown over the running game: aspect ratio applies right away.
   var inGame = false
   var onDisplayChange: (() -> Void)? = nil
   @AppStorage(GVKeyRenderScale) private var renderScale = 0.0
   @AppStorage(GVKeyAspect) private var aspect = -1
-  @AppStorage(GVKeySmoothMotion) private var smoothMotion = false
   @AppStorage(GVKeyViewMode) private var viewMode = "flat"
   @AppStorage(GVKeyShowFPS) private var showFPS = true
 
@@ -536,11 +535,10 @@ private struct GraphicsTab: View {
             Text("4:3").tag(0)
             Text("16:9 widescreen").tag(1)
           }
-          Toggle("Smooth motion", isOn: $smoothMotion)
         } header: {
           Text("Display")
         } footer: {
-          Text("Aspect ratio is saved by the game and may need one more start to fully apply. Smooth motion only does something on 120 Hz displays, so it probably has no effect in a headset.")
+          Text("Aspect ratio is saved by the game and may need one more start to fully apply.")
         }
         Section {
           Toggle("Show FPS counter (testing)", isOn: $showFPS)
@@ -562,7 +560,6 @@ private struct GraphicsTab: View {
       }
       .navigationTitle("Graphics")
       .onChange(of: aspect) { _, _ in if inGame { onDisplayChange?() } }
-      .onChange(of: smoothMotion) { _, _ in if inGame { onDisplayChange?() } }
     }
   }
 }
