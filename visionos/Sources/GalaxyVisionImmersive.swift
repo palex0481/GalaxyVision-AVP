@@ -75,15 +75,42 @@ final class GVImmersive: NSObject {
   static func spaceStateChanged() { applyWindowSize() }
 
   /// While the space is open the game window is a small control panel; it is full size for the options and when closed.
+  private static func gameScene() -> UIWindowScene? {
+    let scenes = UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }
+    return scenes.first { $0.session.role == .windowApplication } ?? scenes.first
+  }
+
+  /// Asks for a window size (also a minimum, so the system's own minimum cannot keep it big) and logs what happened.
+  private static func requestWindowSize(_ scene: UIWindowScene, _ size: CGSize, why: String) {
+    let preferences = UIWindowScene.GeometryPreferences.Vision()
+    preferences.size = size
+    preferences.minimumSize = CGSize(width: min(size.width, 320), height: min(size.height, 200))
+    preferences.resizingRestrictions = .freeform
+    NSLog("GalaxyVision immersive: window %@: now %.0fx%.0f, asking for %.0fx%.0f", why, scene.effectiveGeometry.coordinateSpace.bounds.width,
+          scene.effectiveGeometry.coordinateSpace.bounds.height, size.width, size.height)
+    scene.requestGeometryUpdate(preferences) { error in
+      NSLog("GalaxyVision immersive: window resize to %.0fx%.0f was refused: %@", size.width, size.height, error.localizedDescription)
+    }
+    // What the system actually did, for the trace.
+    DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+      let now = scene.effectiveGeometry.coordinateSpace.bounds.size
+      NSLog("GalaxyVision immersive: window is %.0fx%.0f 1.5 s after asking for %.0fx%.0f (%@)", now.width, now.height, size.width, size.height,
+            abs(now.width - size.width) < 8 ? "applied" : "NOT applied")
+    }
+  }
+
   private static func applyWindowSize() {
-    guard let scene = UIApplication.shared.connectedScenes.compactMap({ $0 as? UIWindowScene }).first else { return }
+    guard let scene = gameScene() else {
+      NSLog("GalaxyVision immersive: no window scene found to resize")
+      return
+    }
     let compact = model.isOpen && !overlayUp
     if compact {
       if savedSize == nil { savedSize = scene.effectiveGeometry.coordinateSpace.bounds.size }
-      scene.requestGeometryUpdate(.Vision(size: CGSize(width: 560, height: 340))) { _ in }
+      requestWindowSize(scene, CGSize(width: 560, height: 340), why: "shrink")
     } else if let size = savedSize {
       savedSize = nil
-      scene.requestGeometryUpdate(.Vision(size: size)) { _ in }
+      requestWindowSize(scene, size, why: "restore")
     }
   }
 
@@ -112,7 +139,7 @@ final class GVImmersiveSceneDelegate: UIResponder, UIHostingSceneDelegate {
 final class GVImmersivePanelFactory: NSObject {
   @objc static func makeViewController(onEnter: @escaping () -> Void, onFlat: @escaping () -> Void) -> UIViewController {
     let host = UIHostingController(rootView: GVImmersivePanel(onEnter: onEnter, onFlat: onFlat))
-    host.view.backgroundColor = .black
+    host.view.backgroundColor = .clear  // the window's own glass shows; the flat picture behind is hidden by the host (main.mm)
     return host
   }
 }
@@ -143,8 +170,9 @@ struct GVImmersivePanel: View {
       }
     }
     .padding(24)
+    .glassBackgroundEffect()
+    .padding(12)
     .frame(maxWidth: .infinity, maxHeight: .infinity)
-    .background(.black)
   }
 }
 

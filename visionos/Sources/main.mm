@@ -70,6 +70,18 @@ static UIWindow *GVGameWindow(void) {
   return nil;
 }
 
+// Immersive space / portal: the game window is only a control panel, so the flat picture behind it is hidden (it is
+// the same picture that is on the big screen) and the window's own glass shows. Visible again while the options
+// are up (they show over the paused flat picture) and when the panel goes away. alpha, not hidden: the layer
+// keeps handing out drawables to the engine either way.
+static UIView *GVFindMetalView(UIView *view);
+static void GVSetFlatPictureVisible(BOOL visible) {
+  UIWindow *window = GVGameWindow();
+  UIView *metal = window ? GVFindMetalView(window) : nil;
+  if (!metal || metal == window || metal == window.rootViewController.view) return;
+  metal.alpha = visible ? 1.0 : 0.0;
+}
+
 static void GVHideOverlay(void) {
   if (!sOverlayContent) return;
   [sOverlayContent willMoveToParentViewController:nil];
@@ -79,7 +91,7 @@ static void GVHideOverlay(void) {
   // The stereo screen is a 3D RealityKit view; it is hidden while the options are up (the paused game's flat
   // picture shows behind them) so the 2D options can never end up behind the 3D plane.
   sStereoContent.view.hidden = NO;
-  if (sImmersivePanel) [GVImmersive setOverlay:NO];  // the window shrinks back while the space is open
+  if (sImmersivePanel) { [GVImmersive setOverlay:NO]; GVSetFlatPictureVisible(NO); }  // the window shrinks back while the space is open
   galaxypad_engine_pause(0);
   GalaxyVisionController.shared.inputSuspended = NO;
 }
@@ -103,7 +115,7 @@ static void GVShowOverlay(void) {
   content.view.frame = parent.bounds;
   content.view.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
   sStereoContent.view.hidden = YES;
-  if (sImmersivePanel) [GVImmersive setOverlay:YES];  // the window grows back to full size for the options
+  if (sImmersivePanel) { [GVImmersive setOverlay:YES]; GVSetFlatPictureVisible(YES); }  // the window grows back to full size for the options
   [parent addSubview:content.view];
   if (host) [content didMoveToParentViewController:host];
   sOverlayContent = content;
@@ -171,6 +183,7 @@ static void GVStereoFailed(NSString *message) {
   const BOOL wasImmersive = sImmersivePanel != nil || GalaxyVisionSettings.spaceSelected;
   if (sImmersivePanel) {
     [GVImmersive close];
+    GVSetFlatPictureVisible(YES);
     [sImmersivePanel willMoveToParentViewController:nil];
     [sImmersivePanel.view removeFromSuperview];
     [sImmersivePanel removeFromParentViewController];
@@ -209,6 +222,7 @@ static void GVInstallImmersive(void) {
   UIViewController *content = [GVImmersivePanelFactory makeViewControllerOnEnter:^{ GVOpenImmersive(); } onFlat:^{
     // Back to the plain flat window: close the space, drop the panel and stop the eye bridge.
     [GVImmersive close];
+    GVSetFlatPictureVisible(YES);
     [GVStereoEngine applyEnabled:NO depth:1.0f convergence:1200.0f];
     [GVStereoEngine setBridgeOpen:NO];
     [sImmersivePanel willMoveToParentViewController:nil];
@@ -222,6 +236,7 @@ static void GVInstallImmersive(void) {
   [parent addSubview:content.view];  // over the flat picture, under the options overlay and toasts added later
   if (host) [content didMoveToParentViewController:host];
   sImmersivePanel = content;
+  GVSetFlatPictureVisible(NO);
   GVOpenImmersive();
 }
 

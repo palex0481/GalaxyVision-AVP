@@ -249,6 +249,19 @@ Glow diagnostics (same commit): the flat-window glow now writes trace lines (`Ga
 every ~5 s `samples N, last sample ... mean colour ...`) so the log shows whether it runs, and the View tab says the glow
 is Flat-only.
 
+## Immersive space: first device test (4:08 PM) and fix
+
+Test result: the space opened (stars, screen, FPS label "58 fps - eye 1920x1080") but the game window stayed large and
+opaque black, covering the big screen. The trace log showed the engine and the host copy running normally (2 eyes at ~60 steps/s,
+"stereo host: ~40 pairs shown per second"), so frames reach the host; the screenshot shows the game's title picture on the big
+screen around the window, so the screen is fed. The window was simply in the way.
+- The shrink request (`requestGeometryUpdate(.Vision(size:))`) ignored its error and its result, so we do not know why the
+  window stayed ~1280x720 pt. It now asks with an explicit minimum size on the game's own window scene, logs the request, any
+  refusal, and the size 1.5 s later (`GalaxyVision immersive: window ...` in the trace). Unverified whether it works now.
+- Whatever the system does with the size, the panel no longer hides the view: its background is clear (the window's glass
+  shows), the content is a small glass card, and the flat game picture behind it is hidden (alpha 0) while the space is open.
+  It is shown again while the options are up, when the space is left, and on "Use the flat window".
+
 ## Immersive 3D (Compositor Services): feasibility assessment (no code written)
 
 Goal: the game world around/in front of the player in true 3D, like SM64-Vision's portal (`PortalRenderer`).
