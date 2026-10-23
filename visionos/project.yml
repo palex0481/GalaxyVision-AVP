@@ -44,14 +44,11 @@ targets:
           - ProfileName: DirectionalGamepad
         UILaunchScreen: {}
         UIApplicationSceneManifest:
-          UIApplicationSupportsMultipleScenes: true
+          UIApplicationSupportsMultipleScenes: false
           UISceneConfigurations:
             UIWindowSceneSessionRoleApplication:
               - UISceneConfigurationName: GalaxyPad
                 UISceneDelegateClassName: GalaxyPadSceneDelegate
-            UISceneSessionRoleImmersiveSpaceApplication:
-              - UISceneConfigurationName: GalaxyVisionImmersive
-                UISceneDelegateClassName: GVImmersiveSceneDelegate
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.example.galaxyvision

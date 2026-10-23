@@ -82,7 +82,7 @@ static const float kStickPointerSpeed = 1.2f;  // viewport widths per second at 
 - (void)applyDisplaySettingsNow {
   _engineSettingsApplied = NO;
   [self applyEngineSettings];
-  if (GalaxyVisionSettings.bridgeSelected) [GVStereoEngine applySavedSettings];  // live depth / convergence
+  if (GalaxyVisionSettings.stereoSelected) [GVStereoEngine applySavedSettings];  // live depth / convergence
 }
 
 + (instancetype)shared {
@@ -115,7 +115,7 @@ static const float kStickPointerSpeed = 1.2f;  // viewport widths per second at 
     NSLog(@"GalaxyVision: aspect ratio %d -> %d", now, result);
   }
   // Stereoscopic window: the engine owns the frame pacing and turns Smooth Motion off while it is on.
-  if (GalaxyVisionSettings.bridgeSelected) return;
+  if (GalaxyVisionSettings.stereoSelected) return;
   if (GalaxyVisionSettings.smoothMotion) {
     NSLog(@"GalaxyVision: smooth motion -> %d", galaxypad_engine_smooth_motion(1));
   } else if (galaxypad_engine_smooth_motion(-1)) {

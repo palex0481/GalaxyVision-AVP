@@ -58,7 +58,6 @@ static BOOL GVEngineHost(void) {
 static UIWindowScene *sGameScene;
 static UIViewController *sOverlayContent;
 static UIViewController *sStereoContent;  // the Stereoscopic window's RealityKit screen (set below)
-static UIViewController *sImmersivePanel;  // the game window's content while the Immersive space is selected
 static UIView *sToastView;
 static BOOL sSceneResigned;
 
@@ -70,18 +69,6 @@ static UIWindow *GVGameWindow(void) {
   return nil;
 }
 
-// Immersive space / portal: the game window is only a control panel, so the flat picture behind it is hidden (it is
-// the same picture that is on the big screen) and the window's own glass shows. Visible again while the options
-// are up (they show over the paused flat picture) and when the panel goes away. alpha, not hidden: the layer
-// keeps handing out drawables to the engine either way.
-static UIView *GVFindMetalView(UIView *view);
-static void GVSetFlatPictureVisible(BOOL visible) {
-  UIWindow *window = GVGameWindow();
-  UIView *metal = window ? GVFindMetalView(window) : nil;
-  if (!metal || metal == window || metal == window.rootViewController.view) return;
-  metal.alpha = visible ? 1.0 : 0.0;
-}
-
 static void GVHideOverlay(void) {
   if (!sOverlayContent) return;
   [sOverlayContent willMoveToParentViewController:nil];
@@ -91,7 +78,6 @@ static void GVHideOverlay(void) {
   // The stereo screen is a 3D RealityKit view; it is hidden while the options are up (the paused game's flat
   // picture shows behind them) so the 2D options can never end up behind the 3D plane.
   sStereoContent.view.hidden = NO;
-  if (sImmersivePanel) { [GVImmersive setOverlay:NO]; GVSetFlatPictureVisible(NO); }  // the window shrinks back while the space is open
   galaxypad_engine_pause(0);
   GalaxyVisionController.shared.inputSuspended = NO;
 }
@@ -115,7 +101,6 @@ static void GVShowOverlay(void) {
   content.view.frame = parent.bounds;
   content.view.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
   sStereoContent.view.hidden = YES;
-  if (sImmersivePanel) { [GVImmersive setOverlay:YES]; GVSetFlatPictureVisible(YES); }  // the window grows back to full size for the options
   [parent addSubview:content.view];
   if (host) [content didMoveToParentViewController:host];
   sOverlayContent = content;
@@ -180,18 +165,8 @@ static void GVStereoFailed(NSString *message) {
     [sStereoContent removeFromParentViewController];
     sStereoContent = nil;
   }
-  const BOOL wasImmersive = sImmersivePanel != nil || GalaxyVisionSettings.spaceSelected;
-  if (sImmersivePanel) {
-    [GVImmersive close];
-    GVSetFlatPictureVisible(YES);
-    [sImmersivePanel willMoveToParentViewController:nil];
-    [sImmersivePanel.view removeFromSuperview];
-    [sImmersivePanel removeFromParentViewController];
-    sImmersivePanel = nil;
-  }
   fprintf(stderr, "GalaxyVision stereo: failed: %s\n", message.UTF8String);
-  GVShowToast([NSString stringWithFormat:@"%@ couldn\u2019t start:\n%@\nThe flat window stays in use.",
-               wasImmersive ? (GalaxyVisionSettings.portalSelected ? @"3D portal window" : @"Immersive space") : @"Stereoscopic window", message], 12);
+  GVShowToast([NSString stringWithFormat:@"Stereoscopic window couldn\u2019t start:\n%@\nThe flat window stays in use.", message], 12);
 }
 
 static void GVInstallStereoView(void) {
@@ -206,38 +181,6 @@ static void GVInstallStereoView(void) {
   [parent insertSubview:content.view atIndex:0];  // under any overlay or toast
   if (host) [content didMoveToParentViewController:host];
   sStereoContent = content;
-}
-
-// Immersive space (beta): the game window shows a small control panel; the screen lives in the SwiftUI
-// ImmersiveSpace (GalaxyVisionImmersive.swift), activated through UIKit scene bridging.
-static void GVOpenImmersive(void) {
-  [GVImmersive openWithErrorHandler:^(NSString *message) { GVStereoFailed(message); }];
-}
-
-static void GVInstallImmersive(void) {
-  UIWindow *gameWindow = GVGameWindow();
-  UIViewController *host = gameWindow.rootViewController;
-  UIView *parent = host ? host.view : gameWindow;
-  if (!parent || sImmersivePanel) return;
-  UIViewController *content = [GVImmersivePanelFactory makeViewControllerOnEnter:^{ GVOpenImmersive(); } onFlat:^{
-    // Back to the plain flat window: close the space, drop the panel and stop the eye bridge.
-    [GVImmersive close];
-    GVSetFlatPictureVisible(YES);
-    [GVStereoEngine applyEnabled:NO depth:1.0f convergence:1200.0f];
-    [GVStereoEngine setBridgeOpen:NO];
-    [sImmersivePanel willMoveToParentViewController:nil];
-    [sImmersivePanel.view removeFromSuperview];
-    [sImmersivePanel removeFromParentViewController];
-    sImmersivePanel = nil;
-  }];
-  if (host) [host addChildViewController:content];
-  content.view.frame = parent.bounds;
-  content.view.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
-  [parent addSubview:content.view];  // over the flat picture, under the options overlay and toasts added later
-  if (host) [content didMoveToParentViewController:host];
-  sImmersivePanel = content;
-  GVSetFlatPictureVisible(NO);
-  GVOpenImmersive();
 }
 
 static void GVStartStereo(void) {
@@ -256,8 +199,7 @@ static void GVStartStereo(void) {
       [timer invalidate];
       sStereoTimer = nil;
       [GVStereoEngine applySavedSettings];  // the engine starts drawing both eyes
-      if (GalaxyVisionSettings.spaceSelected) GVInstallImmersive();
-      else GVInstallStereoView();
+      GVInstallStereoView();
     } else if (status == -1) {
       GVStereoFailed(GVStereoEngine.error);
     } else if (CACurrentMediaTime() - requestedAt > 20) {
@@ -304,7 +246,7 @@ static void GVFPSTick(void) {
     sFPSLabel.font = [UIFont monospacedDigitSystemFontOfSize:18 weight:UIFontWeightSemibold];
     sFPSLabel.autoresizingMask = UIViewAutoresizingFlexibleLeftMargin | UIViewAutoresizingFlexibleBottomMargin;
   }
-  const BOOL stereo = GalaxyVisionSettings.bridgeSelected && (sStereoContent || sImmersivePanel) && GVStereoEngine.status == 1;
+  const BOOL stereo = GalaxyVisionSettings.stereoSelected && sStereoContent && GVStereoEngine.status == 1;
   const uint64_t count = GVFPSCount(stereo);
   const CFTimeInterval now = CACurrentMediaTime();
   if (sFPSLabel.superview != parent) [parent addSubview:sFPSLabel];  // (an open overlay was added later, so stays above)
@@ -417,7 +359,7 @@ static void GVSetGlowEdge(CAGradientLayer *edge, int index, CGRect frame, BOOL h
 
 static void GVGlowTick(void) {
   UIWindow *gameWindow = GVGameWindow();
-  const BOOL wanted = GalaxyVisionSettings.ambientGlow && !GalaxyVisionSettings.bridgeSelected && gameWindow &&
+  const BOOL wanted = GalaxyVisionSettings.ambientGlow && !GalaxyVisionSettings.stereoSelected && gameWindow &&
                       galaxypad_engine_started();
   if (!wanted) {
     if (sGlowView || sGlowEngineOn) GVGlowTeardown();
@@ -530,7 +472,7 @@ static void GVHandOffToEngine(UIScene *scene, UISceneSession *session, UISceneCo
   [sEngineSceneDelegate scene:scene willConnectToSession:session options:options];
   [GalaxyVisionController.shared start];
   if ([scene isKindOfClass:UIWindowScene.class]) GVObserveGameScene((UIWindowScene *)scene);
-  if (GalaxyVisionSettings.bridgeSelected) GVStartStereo();
+  if (GalaxyVisionSettings.stereoSelected) GVStartStereo();
   GVStartFPSCounter();
   GVStartGlow();
 }

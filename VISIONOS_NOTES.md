@@ -168,101 +168,28 @@ A switch in the launcher's View tab (flat mode) and the in-game Graphics tab: **
 - Pointer note: with the picture scaled, window-pointer (not controller) positions are off by the scale while the glow is on.
 - Unverified on device.
 
-## Immersive space (beta): a big flat screen in outer space
+## Immersive space and 3D portal window: removed
 
-View tab > **Immersive space** (BETA), next to Flat window and Stereoscopic window (the old "Immersive: coming soon" row
-now reads "Immersive 3D: coming soon", a placeholder for the separate 3D mode, see the assessment below). Settings keys:
-`gv.viewMode = "immersive"`, `gv.immersiveSize` (screen width in metres, 2-14, default 6), `gv.immersiveDistance`
-(2-8 m, default 3.5), `gv.immersiveDepth` ("Screen depth (3D)", default off). The screen is straight ahead at eye height
-(1.5 m). Picture resolution / Sharp upscaling / depth strength reuse the stereo keys (`gv.stereoResolution`,
-`gv.stereoSharp`, `gv.stereoDepth`). Size and distance apply live, also in the in-game options (Graphics tab).
+Pat judged both modes not good enough, so the launcher offers only **Flat window** and **Stereoscopic window** again.
+Removed: the View-tab buttons, their settings sections (launcher and in-game Graphics tab), `GalaxyVisionImmersive.swift`
+(the `ImmersiveSpace`, `GVImmersiveSceneDelegate`, the control panel, the ARKit head/eye tracker), the Info.plist /
+`project.yml` immersive scene entry (`UIApplicationSupportsMultipleScenes` is back to false), the `immersive*` / `portal*`
+settings keys, the host's flat-picture hiding and window resizing, and on the engine side the portal frustum and its two
+exports (`galaxypad_engine_portal_configure`, `galaxypad_engine_portal_set_eyes`) plus the "depth below 0.005 draws once"
+shortcut (it only existed for the Immersive space's "Screen depth off"; at the Stereoscopic depth slider's 0 both eyes are
+drawn again, which looks the same). A saved view mode of "immersive" or "portal" now falls back to Flat at start-up.
+Kept: Stereoscopic window behaviour, ambient glow (Flat only), glow trace lines and the Flat-only hint, FPS counter,
+Ray surfing, no Smooth Motion toggle, the pause fix.
 
-- **Hosting (new, UNVERIFIED on device).** visionOS 26 UIKit scene bridging: `GVImmersiveSceneDelegate`
-  (`UIHostingSceneDelegate`, `GalaxyVisionImmersive.swift`) declares `ImmersiveSpace(id:)` (`.immersionStyle(.full)`);
-  `main.mm` activates it with `UISceneSessionActivationRequest(hostingDelegateClass:id:)` once the stereo bridge is up
-  (`GVOpenImmersive`). `project.yml` / Info.plist gained a `UISceneSessionRoleImmersiveSpaceApplication` configuration
-  naming that delegate class, and **`UIApplicationSupportsMultipleScenes` is now true** (needed to open a second scene; the
-  game window is still one scene with the same `GalaxyPad` configuration; risk: the system could offer a second
-  game window, which the engine does not support).
-- **What is in the space.** A RealityKit `RealityView`: an inside-out star sphere (radius 100 m, unlit) textured with a
-  4096x2048 equirectangular sky painted at start by `GVSpaceSky` (CoreGraphics, seeded and deterministic: ~25k stars in
-  four colour classes, a Milky Way band, three nebulae, a spiral galaxy; about 0.27 s on the Mac, checked as an image
-  there), a particle emitter of slow drifting specks (30 s life, 14x7x14 m box around the player), and the game
-  screen: the same `GVStereoRenderer.screen` entity as the Stereoscopic window (engine eye IOSurfaces -> two
-  `LowLevelTexture`s -> NativeStereo ShaderGraph material) plus a thin black bezel child. Nothing was removed from or
-  changed in the stereo path except that `fit()` is called with the user's size.
-- **Screen depth (3D).** Off (default): `GVStereoEngine.applySavedSettings` sends depth 0 and the engine
-  (`Stereo::beginEyes`, new `gDepth < 0.005` test) draws each step once through its existing mono path, which publishes
-  the same picture to both eye images, so the screen is flat and cheaper than stereo. On: both eyes are drawn with the
-  stereo depth setting. (The Stereoscopic window with depth 0 now also takes the mono path; same picture, less work.)
-- **Controls and pause/options.** The SDL game window is kept (it paces the engine, takes the controller and hosts
-  the overlay); when the space opens it is requested to shrink to 560x340 (`requestGeometryUpdate(.Vision(size:))`) and
-  shows a small black control panel (Exit immersive space; when the space is closed: Enter immersive space / Use the
-  flat window). R1 (or the other combos) opens the existing options overlay in that window; the window is
-  requested back to its previous size while the overlay is up and shrunk again on Resume (`GVImmersive.setOverlay`). So
-  the options are used in the window that sits in the room beside the screen; the paused game stays visible on the big
-  screen. Closing the window ends the game (as before).
-- **Failure.** If the space cannot be requested, or the renderer fails, the panel is removed, the bridge is closed and
-  the flat window is used with a toast saying why.
-- **Not done / ideas.** Glow tinting the surroundings; a head-locked or Digital-Crown recentre of the screen; options
-  inside the space itself (a SwiftUI attachment); real star geometry instead of the 4096 px sky texture (stars are a
-  little soft at 40 px/deg); passthrough dimming levels.
-- Unverified on device: that the bridged scene activates under the SDL app delegate, that the window shrinks, that the
-  sky/particles/bezel look right, the frame rate in the space.
+To get the work back from git (nothing was rewritten; the removal is a new commit on top):
+- top repo: `26c8af3` Immersive space, `b765669` feasibility notes (kept below), `7e81fb0` 3D portal window (also holds the glow
+  trace lines and hint, which stayed), `f99dca6` Immersive window fix. `git show <id>` or revert by hand; later commits touch the same files.
+- engine (`ref/galaxypad-engine`): `974f138b1` portal frustum and exports, `f4ab3eccd` depth-0 single draw (both are reverted
+  by new commits on top).
+Notes about the Immersive space and portal were dropped from this file; read them with `git show 7e81fb0:VISIONOS_NOTES.md`
+and `git show f99dca6:VISIONOS_NOTES.md`.
 
-## 3D portal window (beta, device build compiled; not tested on the headset)
-
-A window in the room that looks into the game as a small 3D world, like SM64-Vision's portal. Pick **3D portal window** in the
-View tab. It is added next to Flat, Stereoscopic window and Immersive space; those are unchanged.
-
-How it works
-- Same plumbing as the Immersive space: the stereo IOSurface bridge (per-eye rings -> `GVStereoRenderer` -> two
-  `LowLevelTexture`s -> `NativeStereo` ShaderGraph on a 16:9 plane) and the `ImmersiveSpace` scene bridge. The space's
-  immersion style is bound to the mode: `.mixed` for the portal (your room stays visible), `.full` for Immersive.
-- A world-locked window plane is placed once when it opens: in front of the head (yaw only), at eye height, at
-  `Window distance`, `Window size` wide.
-- Every frame the host reads the headset pose with ARKit `WorldTrackingProvider.queryDeviceAnchor` (no permission prompt,
-  no Info.plist key needed for the device pose), turns it into the two eye positions in window space (IPD 63 mm, scaled by
-  `Depth`) and sends them to the engine (`galaxypad_engine_portal_set_eyes`).
-- The engine (`Stereo.cpp`, `portal` branch of `beginEye`) renders each eye *through the window rectangle*: the camera is
-  shifted by the eye position (x `units-per-metre`, default 800 / `World size`) and the projection becomes an
-  off-axis frustum (`[0][0]=ez/hw`, `[0][2]=-ex/hw`, `[1][1]=ez/hh`, `[1][2]=-ey/hh`; near/far are recovered from the
-  saved projection and pushed back by `ez`). The picture on the plane therefore changes with head position
-  (parallax, you can look around the edge of what the window shows). Until the first eye pose arrives it uses the normal stereo path.
-- Head *rotation* needs nothing from us: the window is fixed in the room and the system re-projects it.
-- Settings (live, also in the in-game Graphics tab): window size, distance, world size, depth, picture resolution,
-  sharp upscaling (MetalFX). The ambient glow stays Flat-only.
-
-Differences from SM64-Vision (not closeable here)
-- SM64 re-renders from display lists for each eye at the display rate inside Compositor Services. Our engine renders on the
-  game step (~60 fps) and the pose it uses is predicted 25 ms ahead, so there are about 2-3 frames of lag on head
-  *translation*. Fast sideways head moves can make the image trail slightly.
-- Mixed (room visible) is what makes it a "window"; there is no Compositor Services layer, so no depth/foveation.
-
-Unverified (none of this has run on the headset)
-- The scene bridge (`UIHostingSceneDelegate`, `MultipleScenes`) and mixed style under the SDL UIKit app (same as Immersive).
-- Units-per-metre 800 is a guess; if the world looks too big/small, move `World size`.
-- Edge pop-in: culling and LOD use the engine camera, which is shifted, so objects just off the original frustum may pop.
-- Comfort: game camera cuts/roll are not filtered.
-
-Glow diagnostics (same commit): the flat-window glow now writes trace lines (`GalaxyVision glow: on (...)`, then
-every ~5 s `samples N, last sample ... mean colour ...`) so the log shows whether it runs, and the View tab says the glow
-is Flat-only.
-
-## Immersive space: first device test (4:08 PM) and fix
-
-Test result: the space opened (stars, screen, FPS label "58 fps - eye 1920x1080") but the game window stayed large and
-opaque black, covering the big screen. The trace log showed the engine and the host copy running normally (2 eyes at ~60 steps/s,
-"stereo host: ~40 pairs shown per second"), so frames reach the host; the screenshot shows the game's title picture on the big
-screen around the window, so the screen is fed. The window was simply in the way.
-- The shrink request (`requestGeometryUpdate(.Vision(size:))`) ignored its error and its result, so we do not know why the
-  window stayed ~1280x720 pt. It now asks with an explicit minimum size on the game's own window scene, logs the request, any
-  refusal, and the size 1.5 s later (`GalaxyVision immersive: window ...` in the trace). Unverified whether it works now.
-- Whatever the system does with the size, the panel no longer hides the view: its background is clear (the window's glass
-  shows), the content is a small glass card, and the flat game picture behind it is hidden (alpha 0) while the space is open.
-  It is shown again while the options are up, when the space is left, and on "Use the flat window".
-
-## Immersive 3D (Compositor Services): feasibility assessment (no code written)
+## Immersive 3D (Compositor Services): feasibility assessment (no code written; not pursued)
 
 Goal: the game world around/in front of the player in true 3D, like SM64-Vision's portal (`PortalRenderer`).
 

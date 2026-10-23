@@ -5,13 +5,7 @@
 // (via @AppStorage with these keys) and the controller / engine start-up read them.
 NS_ASSUME_NONNULL_BEGIN
 
-extern NSString *const GVKeyViewMode;           // String: "flat" (default), "stereo" (Stereoscopic window, beta) or "immersive" (Immersive space, beta) or "portal" (3D portal window, beta)
-extern NSString *const GVKeyImmersiveDepth;     // Bool: Immersive space "Screen depth (3D)": the screen shows stereo depth (default off = flat)
-extern NSString *const GVKeyImmersiveSize;      // Double 2...14: Immersive space screen width in metres (default 6)
-extern NSString *const GVKeyImmersiveDistance;  // Double 2...8: Immersive space screen distance in metres (default 3.5)
-extern NSString *const GVKeyPortalSize;         // Double 0.6...3: 3D portal window width in metres (default 1.2)
-extern NSString *const GVKeyPortalDistance;     // Double 0.8...3: 3D portal window distance in metres (default 1.5)
-extern NSString *const GVKeyPortalWorld;        // Double 0.25...4: how big the world behind the window looks (1 = default, higher = bigger)
+extern NSString *const GVKeyViewMode;           // String: "flat" (default) or "stereo" (Stereoscopic window, beta)
 extern NSString *const GVKeyStereoDepth;        // Double 0...2: eye separation scale (1 = default, 0 = no depth)
 extern NSString *const GVKeyStereoResolution;   // Int 540 / 720 / 1080: the stereo window's render height per eye (default 720)
 extern NSString *const GVKeyStereoSharp;        // Bool: sharp upscaling (MetalFX) of the stereo eye images at Low / Medium (default on)
@@ -50,14 +44,6 @@ extern NSString *const GVKeySmoothMotion;       // Bool (only has an effect on >
 @property(class, readonly) NSInteger aspect;
 @property(class, readonly) BOOL smoothMotion;
 @property(class, readonly) BOOL stereoSelected;      // view mode is the Stereoscopic window (beta)
-@property(class, readonly) BOOL immersiveSelected;   // view mode is the Immersive space (beta)
-@property(class, readonly) BOOL portalSelected;      // view mode is the 3D portal window (beta)
-@property(class, readonly) BOOL spaceSelected;       // immersive space or 3D portal window: a SwiftUI ImmersiveSpace holds the screen
-@property(class, readonly) BOOL bridgeSelected;      // stereo window, immersive space or portal: the engine's eye bridge is used
-@property(class, readonly) float portalSize;         // portal window width, metres
-@property(class, readonly) float portalDistance;     // portal window distance, metres
-@property(class, readonly) float portalWorld;        // world scale factor (game units per metre = 800 / this)
-@property(class, readonly) BOOL immersiveDepth;
 @property(class, readonly) float stereoDepth;
 @property(class, readonly) float stereoConvergence;
 @property(class, readonly) BOOL stereoSharp;

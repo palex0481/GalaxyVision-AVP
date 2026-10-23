@@ -105,102 +105,6 @@ private struct SavingTab: View {
   }
 }
 
-/// Immersive space (beta): screen size and distance (live, also while the space is open), "Screen depth (3D)".
-struct ImmersiveSettingsSection: View {
-  var inGame: Bool
-  var onChange: (() -> Void)? = nil
-  @AppStorage(GVKeyImmersiveDepth) private var depth3D = false
-  @AppStorage(GVKeyImmersiveSize) private var size = 6.0
-  @AppStorage(GVKeyImmersiveDistance) private var distance = 3.5
-  @AppStorage(GVKeyStereoDepth) private var depth = 1.0
-  @AppStorage(GVKeyStereoResolution) private var resolution = 720
-  @AppStorage(GVKeyStereoSharp) private var sharp = true
-
-  var body: some View {
-    Section {
-      VStack(alignment: .leading) {
-        Text("Screen size (width): \(size, specifier: "%.1f") m")
-        Slider(value: $size, in: 2...14, step: 0.5)
-      }
-      VStack(alignment: .leading) {
-        Text("Screen distance: \(distance, specifier: "%.1f") m")
-        Slider(value: $distance, in: 2...8, step: 0.25)
-      }
-      Button("Reset size and distance") { size = 6.0; distance = 3.5 }
-      Toggle("Screen depth (3D)", isOn: $depth3D)
-      if depth3D {
-        VStack(alignment: .leading) {
-          Text("Depth (eye separation): \(depth, specifier: "%.2f")x")
-          Slider(value: $depth, in: 0.05...2, step: 0.05)
-        }
-      }
-      Picker("Picture resolution", selection: $resolution) {
-        Text("Low (960\u{00D7}540)").tag(540)
-        Text("Medium (1280\u{00D7}720)").tag(720)
-        Text("Balanced (1600\u{00D7}900)").tag(900)
-        Text("High (1920\u{00D7}1080)").tag(1080)
-      }
-      Toggle("Sharp upscaling (MetalFX)", isOn: $sharp)
-    } header: {
-      Text("Immersive space (beta)")
-    } footer: {
-      Text("The game is a big flat screen floating in space; the screen is at eye height straight ahead. Comfort default: 6 m wide at 3.5 m. Size and distance change live (also while you play). Screen depth (3D) off draws the game once and shows the same picture to both eyes (fastest); on draws both eyes for real depth, like the Stereoscopic window. Picture resolution is the size the game is drawn at (High is sharpest and slowest); Sharp upscaling (MetalFX) enlarges Low, Medium and Balanced with Apple\u{2019}s upscaler. The game window shrinks to a small panel while you are in space and grows back when you pause and press R1 / RB for the options; its \u{201C}Exit immersive space\u{201D} button leaves the space. If the space cannot start, the flat window is used and a message says why.")
-    }
-    .onChange(of: depth3D) { _, _ in onChange?() }
-    .onChange(of: depth) { _, _ in onChange?() }
-  }
-}
-
-/// 3D portal window (beta): window size and distance, how big the world behind it looks, depth, picture quality. Live.
-struct PortalSettingsSection: View {
-  var inGame: Bool
-  var onChange: (() -> Void)? = nil
-  @AppStorage(GVKeyPortalSize) private var size = 1.2
-  @AppStorage(GVKeyPortalDistance) private var distance = 1.5
-  @AppStorage(GVKeyPortalWorld) private var world = 1.0
-  @AppStorage(GVKeyStereoDepth) private var depth = 1.0
-  @AppStorage(GVKeyStereoResolution) private var resolution = 720
-  @AppStorage(GVKeyStereoSharp) private var sharp = true
-
-  var body: some View {
-    Section {
-      VStack(alignment: .leading) {
-        Text("Window size (width): \(size, specifier: "%.2f") m")
-        Slider(value: $size, in: 0.6...3, step: 0.05)
-      }
-      VStack(alignment: .leading) {
-        Text("Window distance: \(distance, specifier: "%.2f") m")
-        Slider(value: $distance, in: 0.8...3, step: 0.05)
-      }
-      VStack(alignment: .leading) {
-        Text("World size behind the window: \(world, specifier: "%.2f")x")
-        Slider(value: $world, in: 0.25...4, step: 0.05)
-      }
-      VStack(alignment: .leading) {
-        Text("Depth (eye separation): \(depth, specifier: "%.2f")x")
-        Slider(value: $depth, in: 0.05...2, step: 0.05)
-      }
-      Button("Reset portal settings") { size = 1.2; distance = 1.5; world = 1.0; depth = 1.0 }
-      Picker("Picture resolution", selection: $resolution) {
-        Text("Low (960\u{00D7}540)").tag(540)
-        Text("Medium (1280\u{00D7}720)").tag(720)
-        Text("Balanced (1600\u{00D7}900)").tag(900)
-        Text("High (1920\u{00D7}1080)").tag(1080)
-      }
-      Toggle("Sharp upscaling (MetalFX)", isOn: $sharp)
-    } header: {
-      Text("3D portal window (beta)")
-    } footer: {
-      Text("A window hangs in your room, straight ahead at eye height, where you were when it opened. The game is drawn for each eye as seen through that window from where your eyes really are, so moving your head shows more of the scene around the edges, like looking into a small world through a real window. Size and distance move and resize the window; World size makes the world behind the glass look bigger or smaller (higher is bigger). Depth is how far apart the eyes are for the 3D effect. Picture resolution is the size each eye is drawn at (High is sharpest and slowest); Sharp upscaling (MetalFX) enlarges Low, Medium and Balanced. Everything changes live, also while you play. The game window shrinks to a small panel while the portal is open and grows back for the options (pause, then R1 / RB). If the portal cannot start, the flat window is used and a message says why.")
-    }
-    .onChange(of: depth) { _, _ in onChange?() }
-    .onChange(of: world) { _, _ in onChange?() }
-    .onChange(of: size) { _, _ in onChange?() }
-    .onChange(of: resolution) { _, _ in onChange?() }
-    .onChange(of: sharp) { _, _ in onChange?() }
-  }
-}
-
 /// Stereoscopic window tuning: eye separation and convergence (applied live while playing).
 struct StereoSettingsSection: View {
   var inGame: Bool
@@ -341,48 +245,15 @@ private struct ViewModeTab: View {
               if viewMode == "stereo" { Image(systemName: "checkmark.circle.fill").foregroundStyle(.tint) }
             }
           }
-          Button { viewMode = "immersive" } label: {
-            HStack {
-              VStack(alignment: .leading) {
-                HStack(spacing: 6) {
-                  Text("Immersive space")
-                  Text("BETA").font(.caption2.bold()).padding(.horizontal, 6).padding(.vertical, 2)
-                    .background(.orange.opacity(0.85), in: Capsule())
-                }
-                Text("A big screen floating in outer space: stars, a nebula, a distant galaxy.").font(.caption).foregroundStyle(.secondary)
-              }
-              Spacer()
-              if viewMode == "immersive" { Image(systemName: "checkmark.circle.fill").foregroundStyle(.tint) }
-            }
-          }
-          Button { viewMode = "portal" } label: {
-            HStack {
-              VStack(alignment: .leading) {
-                HStack(spacing: 6) {
-                  Text("3D portal window")
-                  Text("BETA").font(.caption2.bold()).padding(.horizontal, 6).padding(.vertical, 2)
-                    .background(.orange.opacity(0.85), in: Capsule())
-                }
-                Text("A window in your room into a 3D world: move your head and the view through it shifts, like SM64-Vision\u{2019}s portal.").font(.caption).foregroundStyle(.secondary)
-              }
-              Spacer()
-              if viewMode == "portal" { Image(systemName: "checkmark.circle.fill").foregroundStyle(.tint) }
-            }
-          }
-          comingSoon("Immersive 3D", "The game\u{2019}s world around you in 3D, like SM64-Vision\u{2019}s immersive mode.")
         }
         if viewMode == "stereo" {
           StereoSettingsSection(inGame: false)
-        } else if viewMode == "immersive" {
-          ImmersiveSettingsSection(inGame: false)
-        } else if viewMode == "portal" {
-          PortalSettingsSection(inGame: false)
         } else {
           AmbientGlowSection()
         }
         if viewMode != "flat" {
           Section {
-            Text("The ambient glow only works in the Flat window. Pick \u{201C}Flat window\u{201D} above to turn it on; it stays off in the Stereoscopic window, the Immersive space and the 3D portal window.")
+            Text("The ambient glow only works in the Flat window. Pick \u{201C}Flat window\u{201D} above to turn it on; it stays off in the Stereoscopic window.")
               .font(.footnote).foregroundStyle(.secondary)
           }
         }
@@ -557,12 +428,6 @@ private struct GraphicsTab: View {
         }
         if inGame && viewMode == "stereo" {
           StereoSettingsSection(inGame: true, onChange: onDisplayChange)
-        }
-        if inGame && viewMode == "immersive" {
-          ImmersiveSettingsSection(inGame: true, onChange: onDisplayChange)
-        }
-        if inGame && viewMode == "portal" {
-          PortalSettingsSection(inGame: true, onChange: onDisplayChange)
         }
         if inGame && viewMode == "flat" {
           AmbientGlowSection()

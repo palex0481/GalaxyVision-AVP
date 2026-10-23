@@ -4,15 +4,9 @@
 #include <stdlib.h>
 
 NSString *const GVKeyViewMode = @"gv.viewMode";
-NSString *const GVKeyPortalSize = @"gv.portalSize";
-NSString *const GVKeyPortalDistance = @"gv.portalDistance";
-NSString *const GVKeyPortalWorld = @"gv.portalWorld";
 NSString *const GVKeyStereoDepth = @"gv.stereoDepth";
 NSString *const GVKeyStereoConvergence = @"gv.stereoConvergence";
 NSString *const GVKeyStereoSharp = @"gv.stereoSharp";
-NSString *const GVKeyImmersiveDepth = @"gv.immersiveDepth";
-NSString *const GVKeyImmersiveSize = @"gv.immersiveSize";
-NSString *const GVKeyImmersiveDistance = @"gv.immersiveDistance";
 NSString *const GVKeyStereoResolution = @"gv.stereoResolution";
 NSString *const GVKeyShowFPS = @"gv.showFPS";
 NSString *const GVKeyAmbientGlow = @"gv.ambientGlow";
@@ -40,12 +34,6 @@ static NSUserDefaults *Defaults(void) { return NSUserDefaults.standardUserDefaul
     GVKeyStereoConvergence: @1200.0,
     GVKeyStereoResolution: @720,
     GVKeyStereoSharp: @YES,
-    GVKeyPortalSize: @1.2,
-    GVKeyPortalDistance: @1.5,
-    GVKeyPortalWorld: @1.0,
-    GVKeyImmersiveDepth: @NO,
-    GVKeyImmersiveSize: @6.0,
-    GVKeyImmersiveDistance: @3.5,
     GVKeyShowFPS: @YES,
     GVKeyTiltSteer: @YES,
     GVKeyAmbientGlow: @NO,
@@ -61,6 +49,9 @@ static NSUserDefaults *Defaults(void) { return NSUserDefaults.standardUserDefaul
     GVKeyAspect: @-1,
     GVKeySmoothMotion: @NO,
   }];
+  // The Immersive space and 3D portal window modes were removed: a saved choice of either means Flat now.
+  NSString *mode = [Defaults() stringForKey:GVKeyViewMode];
+  if (![mode isEqualToString:@"flat"] && ![mode isEqualToString:@"stereo"]) [Defaults() setObject:@"flat" forKey:GVKeyViewMode];
 }
 + (BOOL)ambientGlow { return [Defaults() boolForKey:GVKeyAmbientGlow]; }
 + (float)glowStrength {
@@ -93,23 +84,6 @@ static NSUserDefaults *Defaults(void) { return NSUserDefaults.standardUserDefaul
 + (NSInteger)aspect { return [Defaults() integerForKey:GVKeyAspect]; }
 + (BOOL)smoothMotion { return [Defaults() boolForKey:GVKeySmoothMotion]; }
 + (BOOL)stereoSelected { return [[Defaults() stringForKey:GVKeyViewMode] isEqualToString:@"stereo"]; }
-+ (BOOL)immersiveSelected { return [[Defaults() stringForKey:GVKeyViewMode] isEqualToString:@"immersive"]; }
-+ (BOOL)portalSelected { return [[Defaults() stringForKey:GVKeyViewMode] isEqualToString:@"portal"]; }
-+ (BOOL)spaceSelected { return self.immersiveSelected || self.portalSelected; }
-+ (BOOL)bridgeSelected { return self.stereoSelected || self.immersiveSelected || self.portalSelected; }
-+ (float)portalSize {
-  const double v = [Defaults() doubleForKey:GVKeyPortalSize];
-  return (v >= 0.6 && v <= 3.0) ? (float)v : 1.2f;
-}
-+ (float)portalDistance {
-  const double v = [Defaults() doubleForKey:GVKeyPortalDistance];
-  return (v >= 0.8 && v <= 3.0) ? (float)v : 1.5f;
-}
-+ (float)portalWorld {
-  const double v = [Defaults() doubleForKey:GVKeyPortalWorld];
-  return (v >= 0.25 && v <= 4.0) ? (float)v : 1.0f;
-}
-+ (BOOL)immersiveDepth { return [Defaults() boolForKey:GVKeyImmersiveDepth]; }
 + (float)stereoDepth {
   const double v = [Defaults() doubleForKey:GVKeyStereoDepth];
   return (v >= 0.0 && v <= 2.0) ? (float)v : 1.0f;
@@ -151,8 +125,8 @@ static void RedirectTraceLog(void) {
   } else {
     unsetenv("PETARI_RENDER_SCALE");
   }
-  if (self.bridgeSelected) {
-    // Stereoscopic window / Immersive space (beta): the stereo bridge reports to the same trace log. The engine picks the
+  if (self.stereoSelected) {
+    // Stereoscopic window (beta): the stereo bridge reports to the same trace log. The engine picks the
     // render scale (3x, 1920x1080 for 16:9) when stereo starts; the launcher does not set one for it.
     RedirectTraceLog();
     setenv("PETARI_STEREO_TRACE", "1", 1);

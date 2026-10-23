@@ -27,7 +27,5 @@ NS_ASSUME_NONNULL_BEGIN
 + (void)applyEnabled:(BOOL)enabled depth:(float)depth convergence:(float)convergence;
 // Applies the saved depth / convergence settings; on only if the bridge is ready.
 + (void)applySavedSettings;
-// 3D portal window: both eyes' positions (left x y z, right x y z) in the window's own space, metres. Called every frame.
-+ (void)setPortalEyes:(const float *)six;
 @end
 NS_ASSUME_NONNULL_END
