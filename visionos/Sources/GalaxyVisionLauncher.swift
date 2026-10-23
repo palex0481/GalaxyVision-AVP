@@ -317,7 +317,7 @@ private struct ControlsTab: View {
         }
         Section("Layout") {
           layoutRow("Left stick", "Move; also steers Ray surfing and Star Ball rolling")
-          layoutRow("Cross / A", "Jump, swim, confirm, pull stars")
+          layoutRow("X (Cross) / A", "Jump, swim, confirm, pull stars")
           layoutRow("Circle / B", bJumps ? "Jump, swim" : "Back, shoot Star Bits")
           layoutRow("Square / Triangle", "Spin, pick up, throw")
           layoutRow("R2", "Shoot Star Bits")
