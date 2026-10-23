@@ -108,3 +108,15 @@ Depth and convergence sliders: `gv.stereoDepth` (0-2, default 1) and `gv.stereoC
   LowLevelTexture. Scalers are cached per size, one per eye. Frames that are sub-sized while sharp is off/failed are skipped
   (never shown unscaled). Any failure sets `GVStereoEngine.sharpFailed` for the run and the engine returns to the plain path.
 - The FPS counter shows "sharp" while MetalFX pictures are being shown. Untested on device.
+
+## Pause in the stereo window (fix)
+- Cause (from code and the device trace, not yet confirmed on the headset): the game opens its own pause menu by holding Plus (or
+  Minus) for 12 game STEPS (`PauseButtonCheckerInGame`, `sHoldCounterMax`, 0.2 s at the Wii's 60 steps/s). The stereo window draws
+  each step twice and runs about 20-45 steps/s, so the same hold took 0.3-0.6 s and a normal press never reached 12. The R1 options
+  overlay (PS5/Xbox pads) and the N64 Start+Capture combo only act while the game's pause menu is up, so they looked broken too.
+- Fix (engine `PauseButtonCheckerInGame.cpp`, native only): the hold also counts in real time. A button held for 200 ms counts as held
+  even if fewer than 12 steps passed ("Petari pause: Plus held N ms (M steps, slow frame rate): counted as held" in the trace log).
+  At 60 steps/s nothing changes; it still fires once per hold.
+- Overlay visibility (`main.mm`): `GVShowOverlay` hides the stereo child view while the options overlay (a subview of the game window,
+  never a UIWindow) is up, so the 2D overlay cannot end up behind the 3D RealityKit plane; the paused game's flat frame shows behind
+  it. `GVHideOverlay` shows the stereo view again before unpausing.

@@ -57,6 +57,7 @@ static BOOL GVEngineHost(void) {
 // blurred the whole game picture behind it (the "fuzzy window" regression of 20ea626).
 static UIWindowScene *sGameScene;
 static UIViewController *sOverlayContent;
+static UIViewController *sStereoContent;  // the Stereoscopic window's RealityKit screen (set below)
 static UIView *sToastView;
 static BOOL sSceneResigned;
 
@@ -74,6 +75,9 @@ static void GVHideOverlay(void) {
   [sOverlayContent.view removeFromSuperview];
   [sOverlayContent removeFromParentViewController];
   sOverlayContent = nil;
+  // The stereo screen is a 3D RealityKit view; it is hidden while the options are up (the paused game's flat
+  // picture shows behind them) so the 2D options can never end up behind the 3D plane.
+  sStereoContent.view.hidden = NO;
   galaxypad_engine_pause(0);
   GalaxyVisionController.shared.inputSuspended = NO;
 }
@@ -96,6 +100,7 @@ static void GVShowOverlay(void) {
   if (host) [host addChildViewController:content];
   content.view.frame = parent.bounds;
   content.view.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
+  sStereoContent.view.hidden = YES;
   [parent addSubview:content.view];
   if (host) [content didMoveToParentViewController:host];
   sOverlayContent = content;
@@ -147,7 +152,6 @@ static void GVShowSaveToast(void) {
 // and a RealityKit screen (GalaxyVisionStereo.swift) is added over the game window as a child view
 // controller (again: not a UIWindow). If anything fails the game simply stays in the flat window and a
 // toast says why. The SDL window keeps presenting underneath, which paces the game.
-static UIViewController *sStereoContent;
 static NSTimer *sStereoTimer;
 
 static void GVStereoFailed(NSString *message) {
