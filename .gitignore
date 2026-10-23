@@ -68,3 +68,7 @@ __pycache__/
 .vscode/
 *.swp
 *~
+
+# visionOS app build output
+visionos/.build/
+visionos/GalaxyVision.xcodeproj/xcuserdata/

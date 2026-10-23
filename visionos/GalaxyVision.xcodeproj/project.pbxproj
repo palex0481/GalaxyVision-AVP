@@ -1,0 +1,365 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		25681A4AD4DB913AF02F0007 /* GalaxyPadEngine.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 2D1E6B43CB0E6A2FE52F016C /* GalaxyPadEngine.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		2AC70771104C64A8D9F57A70 /* UIKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 9EE17E7F1726D3AB3488F241 /* UIKit.framework */; };
+		30661FD1C1B2F23CFBEC9E33 /* GameController.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 4F1111C9925ABE66F81767D4 /* GameController.framework */; };
+		5AC421572CE6F050D3A4B782 /* GalaxyPadEngine.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 2D1E6B43CB0E6A2FE52F016C /* GalaxyPadEngine.framework */; };
+		68A6B83A23EFBEBAA13C42F3 /* GalaxyVisionController.mm in Sources */ = {isa = PBXBuildFile; fileRef = 4BACAFC35890EA3401E27C29 /* GalaxyVisionController.mm */; };
+		6B47641DE9CE74950328FB51 /* main.mm in Sources */ = {isa = PBXBuildFile; fileRef = 83D45D20E19019C86E747EAC /* main.mm */; };
+		7D2667BAEBFB03D05CD5A6A1 /* Metal.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 59C063713F25D74D674C471B /* Metal.framework */; };
+		DC733DB5B2083B6DB9C744BF /* QuartzCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = BE68F1ABBA74EF4A9DF5B41D /* QuartzCore.framework */; };
+		EBDBDC9A2BABCFE90C4572BD /* UniformTypeIdentifiers.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 81A3E315B4A090CBC262A2BF /* UniformTypeIdentifiers.framework */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		136B05921FD0A1EDD19A121C /* Embed Frameworks */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+				25681A4AD4DB913AF02F0007 /* GalaxyPadEngine.framework in Embed Frameworks */,
+			);
+			name = "Embed Frameworks";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		2D1E6B43CB0E6A2FE52F016C /* GalaxyPadEngine.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = GalaxyPadEngine.framework; path = "../generated/build/visionos-device-engine/native/app/GalaxyPadEngine.framework"; sourceTree = "<group>"; };
+		4BACAFC35890EA3401E27C29 /* GalaxyVisionController.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = GalaxyVisionController.mm; sourceTree = "<group>"; };
+		4F1111C9925ABE66F81767D4 /* GameController.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = GameController.framework; path = System/Library/Frameworks/GameController.framework; sourceTree = SDKROOT; };
+		59C063713F25D74D674C471B /* Metal.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Metal.framework; path = System/Library/Frameworks/Metal.framework; sourceTree = SDKROOT; };
+		81A3E315B4A090CBC262A2BF /* UniformTypeIdentifiers.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = UniformTypeIdentifiers.framework; path = System/Library/Frameworks/UniformTypeIdentifiers.framework; sourceTree = SDKROOT; };
+		83D45D20E19019C86E747EAC /* main.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = main.mm; sourceTree = "<group>"; };
+		9EE17E7F1726D3AB3488F241 /* UIKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = UIKit.framework; path = System/Library/Frameworks/UIKit.framework; sourceTree = SDKROOT; };
+		BE68F1ABBA74EF4A9DF5B41D /* QuartzCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QuartzCore.framework; path = System/Library/Frameworks/QuartzCore.framework; sourceTree = SDKROOT; };
+		C8BC1635F6A1769F1325B72A /* GalaxyVisionController.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = GalaxyVisionController.h; sourceTree = "<group>"; };
+		F77BC0D13ADDB7866B9B1F14 /* GalaxyVision.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = GalaxyVision.app; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		859E5650481E745B5C2A508E /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				5AC421572CE6F050D3A4B782 /* GalaxyPadEngine.framework in Frameworks */,
+				30661FD1C1B2F23CFBEC9E33 /* GameController.framework in Frameworks */,
+				2AC70771104C64A8D9F57A70 /* UIKit.framework in Frameworks */,
+				7D2667BAEBFB03D05CD5A6A1 /* Metal.framework in Frameworks */,
+				DC733DB5B2083B6DB9C744BF /* QuartzCore.framework in Frameworks */,
+				EBDBDC9A2BABCFE90C4572BD /* UniformTypeIdentifiers.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		4041F680ACCFB2E20CAEA115 = {
+			isa = PBXGroup;
+			children = (
+				F4BC593154AACD7A40634DE6 /* Sources */,
+				B4C9D6CB21E102027EF12037 /* Frameworks */,
+				FE4D5F980C5DD7AD6FFAFD93 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		B4C9D6CB21E102027EF12037 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				2D1E6B43CB0E6A2FE52F016C /* GalaxyPadEngine.framework */,
+				4F1111C9925ABE66F81767D4 /* GameController.framework */,
+				59C063713F25D74D674C471B /* Metal.framework */,
+				BE68F1ABBA74EF4A9DF5B41D /* QuartzCore.framework */,
+				9EE17E7F1726D3AB3488F241 /* UIKit.framework */,
+				81A3E315B4A090CBC262A2BF /* UniformTypeIdentifiers.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		F4BC593154AACD7A40634DE6 /* Sources */ = {
+			isa = PBXGroup;
+			children = (
+				C8BC1635F6A1769F1325B72A /* GalaxyVisionController.h */,
+				4BACAFC35890EA3401E27C29 /* GalaxyVisionController.mm */,
+				83D45D20E19019C86E747EAC /* main.mm */,
+			);
+			path = Sources;
+			sourceTree = "<group>";
+		};
+		FE4D5F980C5DD7AD6FFAFD93 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				F77BC0D13ADDB7866B9B1F14 /* GalaxyVision.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		0E2163904A5A1AFF85F98FDD /* GalaxyVision */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 4DD9092A675646DF6AFBDBED /* Build configuration list for PBXNativeTarget "GalaxyVision" */;
+			buildPhases = (
+				5E57A39EF599A9AB8EE692B8 /* Sources */,
+				859E5650481E745B5C2A508E /* Frameworks */,
+				136B05921FD0A1EDD19A121C /* Embed Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = GalaxyVision;
+			packageProductDependencies = (
+			);
+			productName = GalaxyVision;
+			productReference = F77BC0D13ADDB7866B9B1F14 /* GalaxyVision.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		88ABD0FFF3845357EC282A32 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+					0E2163904A5A1AFF85F98FDD = {
+						DevelopmentTeam = YOURTEAMID;
+						ProvisioningStyle = Automatic;
+					};
+				};
+			};
+			buildConfigurationList = 24B975281F2D5A19DD6BE05C /* Build configuration list for PBXProject "GalaxyVision" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = 4041F680ACCFB2E20CAEA115;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = FE4D5F980C5DD7AD6FFAFD93 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				0E2163904A5A1AFF85F98FDD /* GalaxyVision */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		5E57A39EF599A9AB8EE692B8 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				68A6B83A23EFBEBAA13C42F3 /* GalaxyVisionController.mm in Sources */,
+				6B47641DE9CE74950328FB51 /* main.mm in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		127BB7B8E9D30C2D3377891B /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CLANG_CXX_LANGUAGE_STANDARD = "c++20";
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				ENGINE_BUILD_DIR = "$(SRCROOT)/../generated/build/visionos-device-engine/native/app";
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(ENGINE_BUILD_DIR)",
+					"\"../generated/build/visionos-device-engine/native/app\"",
+				);
+				INFOPLIST_FILE = Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
+				MARKETING_VERSION = 0.1;
+				PRODUCT_BUNDLE_IDENTIFIER = com.example.galaxyvision;
+				SDKROOT = xros;
+				TARGETED_DEVICE_FAMILY = 7;
+			};
+			name = Debug;
+		};
+		998E01AED420EBE3550B6B7D /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = xros;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+				XROS_DEPLOYMENT_TARGET = 2.0;
+			};
+			name = Debug;
+		};
+		A597352964C7F1571151BE18 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CLANG_CXX_LANGUAGE_STANDARD = "c++20";
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				ENGINE_BUILD_DIR = "$(SRCROOT)/../generated/build/visionos-device-engine/native/app";
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(ENGINE_BUILD_DIR)",
+					"\"../generated/build/visionos-device-engine/native/app\"",
+				);
+				INFOPLIST_FILE = Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
+				MARKETING_VERSION = 0.1;
+				PRODUCT_BUNDLE_IDENTIFIER = com.example.galaxyvision;
+				SDKROOT = xros;
+				TARGETED_DEVICE_FAMILY = 7;
+			};
+			name = Release;
+		};
+		F204E82B03856EB65D1B9AAF /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = xros;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.0;
+				XROS_DEPLOYMENT_TARGET = 2.0;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		24B975281F2D5A19DD6BE05C /* Build configuration list for PBXProject "GalaxyVision" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				998E01AED420EBE3550B6B7D /* Debug */,
+				F204E82B03856EB65D1B9AAF /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		4DD9092A675646DF6AFBDBED /* Build configuration list for PBXNativeTarget "GalaxyVision" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				127BB7B8E9D30C2D3377891B /* Debug */,
+				A597352964C7F1571151BE18 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 88ABD0FFF3845357EC282A32 /* Project object */;
+}

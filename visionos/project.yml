@@ -1,0 +1,62 @@
+# GalaxyVision: minimal visionOS shell around GalaxyPadEngine.framework.
+# Build the engine first: scripts/build-visionos-engine.sh
+# Team copied (read-only) from SM64-Vision's Config/Signing.xcconfig; bundle id is distinct.
+name: GalaxyVision
+
+options:
+  bundleIdPrefix: com.example
+  deploymentTarget:
+    visionOS: "2.0"
+  createIntermediateGroups: true
+
+targets:
+  GalaxyVision:
+    type: application
+    platform: visionOS
+    sources:
+      - path: Sources
+    info:
+      path: Info.plist
+      properties:
+        CFBundleDisplayName: GalaxyVision
+        CFBundleName: GalaxyVision
+        CFBundleDevelopmentRegion: en
+        CFBundleShortVersionString: "0.1"
+        CFBundleVersion: "1"
+        ITSAppUsesNonExemptEncryption: false
+        UIFileSharingEnabled: true
+        LSSupportsOpeningDocumentsInPlace: true
+        GCSupportsControllerUserInteraction: true
+        GCSupportedGameControllers:
+          - ProfileName: ExtendedGamepad
+          - ProfileName: MicroGamepad
+          - ProfileName: DirectionalGamepad
+        UILaunchScreen: {}
+        UIApplicationSceneManifest:
+          UIApplicationSupportsMultipleScenes: false
+          UISceneConfigurations:
+            UIWindowSceneSessionRoleApplication:
+              - UISceneConfigurationName: GalaxyPad
+                UISceneDelegateClassName: GalaxyPadSceneDelegate
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.example.galaxyvision
+        DEVELOPMENT_TEAM: ""
+        CODE_SIGN_STYLE: Automatic
+        MARKETING_VERSION: "0.1"
+        CURRENT_PROJECT_VERSION: "1"
+        CLANG_CXX_LANGUAGE_STANDARD: c++20
+        CLANG_ENABLE_OBJC_ARC: YES
+        ENABLE_USER_SCRIPT_SANDBOXING: NO
+        ENGINE_BUILD_DIR: $(SRCROOT)/../generated/build/visionos-device-engine/native/app
+        FRAMEWORK_SEARCH_PATHS: $(ENGINE_BUILD_DIR)
+        LD_RUNPATH_SEARCH_PATHS: "$(inherited) @executable_path/Frameworks"
+    dependencies:
+      - framework: ../generated/build/visionos-device-engine/native/app/GalaxyPadEngine.framework
+        embed: true
+        codeSign: true
+      - sdk: GameController.framework
+      - sdk: UIKit.framework
+      - sdk: Metal.framework
+      - sdk: QuartzCore.framework
+      - sdk: UniformTypeIdentifiers.framework
