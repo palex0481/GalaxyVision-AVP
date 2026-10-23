@@ -8,16 +8,23 @@
 
 /* Begin PBXBuildFile section */
 		06BC8274FBE80663DD7DDF85 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A38CFE0898484C710D2E470A /* SwiftUI.framework */; };
+		071B120336591CBBDEF09F19 /* GalaxyVisionStereoEngine.mm in Sources */ = {isa = PBXBuildFile; fileRef = 30E6400E31BCDBC0601C43F5 /* GalaxyVisionStereoEngine.mm */; };
 		25681A4AD4DB913AF02F0007 /* GalaxyPadEngine.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 2D1E6B43CB0E6A2FE52F016C /* GalaxyPadEngine.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		2AC70771104C64A8D9F57A70 /* UIKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 9EE17E7F1726D3AB3488F241 /* UIKit.framework */; };
 		30661FD1C1B2F23CFBEC9E33 /* GameController.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 4F1111C9925ABE66F81767D4 /* GameController.framework */; };
+		38991F74EEE5F7A9E3215686 /* GalaxyVisionStereo.swift in Sources */ = {isa = PBXBuildFile; fileRef = E425E53E125B1F8FACF18FC4 /* GalaxyVisionStereo.swift */; };
 		5AC421572CE6F050D3A4B782 /* GalaxyPadEngine.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 2D1E6B43CB0E6A2FE52F016C /* GalaxyPadEngine.framework */; };
 		68A6B83A23EFBEBAA13C42F3 /* GalaxyVisionController.mm in Sources */ = {isa = PBXBuildFile; fileRef = 4BACAFC35890EA3401E27C29 /* GalaxyVisionController.mm */; };
 		6B47641DE9CE74950328FB51 /* main.mm in Sources */ = {isa = PBXBuildFile; fileRef = 83D45D20E19019C86E747EAC /* main.mm */; };
 		7D2667BAEBFB03D05CD5A6A1 /* Metal.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 59C063713F25D74D674C471B /* Metal.framework */; };
+		7EF4F79CE8FF6779941E35A0 /* NativeStereoPlaceholder.png in Resources */ = {isa = PBXBuildFile; fileRef = 93C32612454A717A7027FE8D /* NativeStereoPlaceholder.png */; };
+		7F61C2231A136A1B7BCAC35B /* RealityKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 14A65D1EA2E79D30DFF44335 /* RealityKit.framework */; };
 		87254B6F68B6790DD8C50B7A /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 5BA56ACBADEFCE5F9A181398 /* Assets.xcassets */; };
+		8C9A2658160C768E32962A43 /* Stereo-Apple-LICENSE.txt in Resources */ = {isa = PBXBuildFile; fileRef = 3BC59FDC8646D78C29E36ED0 /* Stereo-Apple-LICENSE.txt */; };
 		A2DBDA356E5FCC2E946C6551 /* GalaxyVisionSettings.mm in Sources */ = {isa = PBXBuildFile; fileRef = 26C89ABD504C8C0FB38B7C50 /* GalaxyVisionSettings.mm */; };
 		BDBC5052BB7F5FE28E816DFC /* GalaxyVisionLauncher.swift in Sources */ = {isa = PBXBuildFile; fileRef = B84CEB9E7B76B15665EB1079 /* GalaxyVisionLauncher.swift */; };
+		CB7A084524B549ED16A4E2DB /* IOSurface.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 75821B89F4D57913536069C4 /* IOSurface.framework */; };
+		D84D5833F8F03194EAB546C1 /* NativeStereo.usda in Resources */ = {isa = PBXBuildFile; fileRef = 29BE28FDC4F9A5B29E608820 /* NativeStereo.usda */; };
 		DC733DB5B2083B6DB9C744BF /* QuartzCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = BE68F1ABBA74EF4A9DF5B41D /* QuartzCore.framework */; };
 		EBDBDC9A2BABCFE90C4572BD /* UniformTypeIdentifiers.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 81A3E315B4A090CBC262A2BF /* UniformTypeIdentifiers.framework */; };
 /* End PBXBuildFile section */
@@ -37,20 +44,28 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		14A65D1EA2E79D30DFF44335 /* RealityKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = RealityKit.framework; path = System/Library/Frameworks/RealityKit.framework; sourceTree = SDKROOT; };
 		26C89ABD504C8C0FB38B7C50 /* GalaxyVisionSettings.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = GalaxyVisionSettings.mm; sourceTree = "<group>"; };
+		29BE28FDC4F9A5B29E608820 /* NativeStereo.usda */ = {isa = PBXFileReference; path = NativeStereo.usda; sourceTree = "<group>"; };
 		2D1E6B43CB0E6A2FE52F016C /* GalaxyPadEngine.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = GalaxyPadEngine.framework; path = "../generated/build/visionos-device-engine/native/app/GalaxyPadEngine.framework"; sourceTree = "<group>"; };
+		30E6400E31BCDBC0601C43F5 /* GalaxyVisionStereoEngine.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = GalaxyVisionStereoEngine.mm; sourceTree = "<group>"; };
+		3BC59FDC8646D78C29E36ED0 /* Stereo-Apple-LICENSE.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "Stereo-Apple-LICENSE.txt"; sourceTree = "<group>"; };
 		4BACAFC35890EA3401E27C29 /* GalaxyVisionController.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = GalaxyVisionController.mm; sourceTree = "<group>"; };
 		4F1111C9925ABE66F81767D4 /* GameController.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = GameController.framework; path = System/Library/Frameworks/GameController.framework; sourceTree = SDKROOT; };
 		59C063713F25D74D674C471B /* Metal.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Metal.framework; path = System/Library/Frameworks/Metal.framework; sourceTree = SDKROOT; };
 		5BA56ACBADEFCE5F9A181398 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		5D6FACF8654DD799D4502495 /* GalaxyVisionStereoEngine.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = GalaxyVisionStereoEngine.h; sourceTree = "<group>"; };
+		75821B89F4D57913536069C4 /* IOSurface.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = IOSurface.framework; path = System/Library/Frameworks/IOSurface.framework; sourceTree = SDKROOT; };
 		81A3E315B4A090CBC262A2BF /* UniformTypeIdentifiers.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = UniformTypeIdentifiers.framework; path = System/Library/Frameworks/UniformTypeIdentifiers.framework; sourceTree = SDKROOT; };
 		83D45D20E19019C86E747EAC /* main.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = main.mm; sourceTree = "<group>"; };
+		93C32612454A717A7027FE8D /* NativeStereoPlaceholder.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = NativeStereoPlaceholder.png; sourceTree = "<group>"; };
 		9EE17E7F1726D3AB3488F241 /* UIKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = UIKit.framework; path = System/Library/Frameworks/UIKit.framework; sourceTree = SDKROOT; };
 		A38CFE0898484C710D2E470A /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
 		AB9AD67F3258FE8D502722A5 /* GalaxyVisionSettings.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = GalaxyVisionSettings.h; sourceTree = "<group>"; };
 		B84CEB9E7B76B15665EB1079 /* GalaxyVisionLauncher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GalaxyVisionLauncher.swift; sourceTree = "<group>"; };
 		BE68F1ABBA74EF4A9DF5B41D /* QuartzCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QuartzCore.framework; path = System/Library/Frameworks/QuartzCore.framework; sourceTree = SDKROOT; };
 		C8BC1635F6A1769F1325B72A /* GalaxyVisionController.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = GalaxyVisionController.h; sourceTree = "<group>"; };
+		E425E53E125B1F8FACF18FC4 /* GalaxyVisionStereo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GalaxyVisionStereo.swift; sourceTree = "<group>"; };
 		F4950FF4E5FBFE527A5CA472 /* GalaxyVision-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "GalaxyVision-Bridging-Header.h"; sourceTree = "<group>"; };
 		F77BC0D13ADDB7866B9B1F14 /* GalaxyVision.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = GalaxyVision.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -67,6 +82,8 @@
 				DC733DB5B2083B6DB9C744BF /* QuartzCore.framework in Frameworks */,
 				EBDBDC9A2BABCFE90C4572BD /* UniformTypeIdentifiers.framework in Frameworks */,
 				06BC8274FBE80663DD7DDF85 /* SwiftUI.framework in Frameworks */,
+				7F61C2231A136A1B7BCAC35B /* RealityKit.framework in Frameworks */,
+				CB7A084524B549ED16A4E2DB /* IOSurface.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -87,6 +104,9 @@
 			isa = PBXGroup;
 			children = (
 				5BA56ACBADEFCE5F9A181398 /* Assets.xcassets */,
+				29BE28FDC4F9A5B29E608820 /* NativeStereo.usda */,
+				93C32612454A717A7027FE8D /* NativeStereoPlaceholder.png */,
+				3BC59FDC8646D78C29E36ED0 /* Stereo-Apple-LICENSE.txt */,
 			);
 			path = Resources;
 			sourceTree = "<group>";
@@ -96,8 +116,10 @@
 			children = (
 				2D1E6B43CB0E6A2FE52F016C /* GalaxyPadEngine.framework */,
 				4F1111C9925ABE66F81767D4 /* GameController.framework */,
+				75821B89F4D57913536069C4 /* IOSurface.framework */,
 				59C063713F25D74D674C471B /* Metal.framework */,
 				BE68F1ABBA74EF4A9DF5B41D /* QuartzCore.framework */,
+				14A65D1EA2E79D30DFF44335 /* RealityKit.framework */,
 				A38CFE0898484C710D2E470A /* SwiftUI.framework */,
 				9EE17E7F1726D3AB3488F241 /* UIKit.framework */,
 				81A3E315B4A090CBC262A2BF /* UniformTypeIdentifiers.framework */,
@@ -114,6 +136,9 @@
 				B84CEB9E7B76B15665EB1079 /* GalaxyVisionLauncher.swift */,
 				AB9AD67F3258FE8D502722A5 /* GalaxyVisionSettings.h */,
 				26C89ABD504C8C0FB38B7C50 /* GalaxyVisionSettings.mm */,
+				E425E53E125B1F8FACF18FC4 /* GalaxyVisionStereo.swift */,
+				5D6FACF8654DD799D4502495 /* GalaxyVisionStereoEngine.h */,
+				30E6400E31BCDBC0601C43F5 /* GalaxyVisionStereoEngine.mm */,
 				83D45D20E19019C86E747EAC /* main.mm */,
 			);
 			path = Sources;
@@ -191,6 +216,9 @@
 			buildActionMask = 2147483647;
 			files = (
 				87254B6F68B6790DD8C50B7A /* Assets.xcassets in Resources */,
+				D84D5833F8F03194EAB546C1 /* NativeStereo.usda in Resources */,
+				7EF4F79CE8FF6779941E35A0 /* NativeStereoPlaceholder.png in Resources */,
+				8C9A2658160C768E32962A43 /* Stereo-Apple-LICENSE.txt in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -226,6 +254,8 @@
 				68A6B83A23EFBEBAA13C42F3 /* GalaxyVisionController.mm in Sources */,
 				BDBC5052BB7F5FE28E816DFC /* GalaxyVisionLauncher.swift in Sources */,
 				A2DBDA356E5FCC2E946C6551 /* GalaxyVisionSettings.mm in Sources */,
+				38991F74EEE5F7A9E3215686 /* GalaxyVisionStereo.swift in Sources */,
+				071B120336591CBBDEF09F19 /* GalaxyVisionStereoEngine.mm in Sources */,
 				6B47641DE9CE74950328FB51 /* main.mm in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

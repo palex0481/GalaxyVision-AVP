@@ -4,6 +4,8 @@
 #include <stdlib.h>
 
 NSString *const GVKeyViewMode = @"gv.viewMode";
+NSString *const GVKeyStereoDepth = @"gv.stereoDepth";
+NSString *const GVKeyStereoConvergence = @"gv.stereoConvergence";
 NSString *const GVKeyPointerSensitivity = @"gv.pointerSensitivity";
 NSString *const GVKeyPointerMode = @"gv.pointerMode";
 NSString *const GVKeyGyroAim = @"gv.gyroAim";
@@ -20,6 +22,8 @@ static NSUserDefaults *Defaults(void) { return NSUserDefaults.standardUserDefaul
 + (void)registerDefaults {
   [Defaults() registerDefaults:@{
     GVKeyViewMode: @"flat",
+    GVKeyStereoDepth: @1.0,
+    GVKeyStereoConvergence: @1200.0,
     GVKeyPointerSensitivity: @1.0,
     GVKeyPointerMode: @0,
     GVKeyGyroAim: @NO,
@@ -49,6 +53,27 @@ static NSUserDefaults *Defaults(void) { return NSUserDefaults.standardUserDefaul
 }
 + (NSInteger)aspect { return [Defaults() integerForKey:GVKeyAspect]; }
 + (BOOL)smoothMotion { return [Defaults() boolForKey:GVKeySmoothMotion]; }
++ (BOOL)stereoSelected { return [[Defaults() stringForKey:GVKeyViewMode] isEqualToString:@"stereo"]; }
++ (float)stereoDepth {
+  const double v = [Defaults() doubleForKey:GVKeyStereoDepth];
+  return (v >= 0.0 && v <= 2.0) ? (float)v : 1.0f;
+}
++ (float)stereoConvergence {
+  const double v = [Defaults() doubleForKey:GVKeyStereoConvergence];
+  return (v >= 400.0 && v <= 3000.0) ? (float)v : 1200.0f;
+}
+
+// Library/Caches/galaxyvision-trace.log in the app container: the engine's stderr (size trace, stereo bridge log).
+static void RedirectTraceLog(void) {
+  static BOOL done;
+  if (done) return;
+  done = YES;
+  setenv("PETARI_TRACE_BOOT", "1", 1);
+  NSURL *caches = [NSFileManager.defaultManager URLsForDirectory:NSCachesDirectory inDomains:NSUserDomainMask].firstObject;
+  NSString *log = [caches URLByAppendingPathComponent:@"galaxyvision-trace.log"].path;
+  freopen(log.fileSystemRepresentation, "w", stderr);
+  setvbuf(stderr, NULL, _IOLBF, 0);
+}
 
 + (void)applyStartupEnvironment {
   // The shell keeps the phone touch controls off (TARGET_OS_IPHONE is true on visionOS).
@@ -60,14 +85,16 @@ static NSUserDefaults *Defaults(void) { return NSUserDefaults.standardUserDefaul
     char text[32];
     snprintf(text, sizeof text, "%.2f", scale);
     setenv("PETARI_RENDER_SCALE", text, 1);
-    // Diagnostics for a non-default scale: the engine's size trace (surface / EFB / XFB / viewport)
-    // goes to Library/Caches/galaxyvision-trace.log in the app container.
-    setenv("PETARI_TRACE_BOOT", "1", 1);
-    NSURL *caches = [NSFileManager.defaultManager URLsForDirectory:NSCachesDirectory inDomains:NSUserDomainMask].firstObject;
-    NSString *log = [caches URLByAppendingPathComponent:@"galaxyvision-trace.log"].path;
-    freopen(log.fileSystemRepresentation, "w", stderr);
-    setvbuf(stderr, NULL, _IOLBF, 0);
+    // Diagnostics for a non-default scale: the engine's size trace (surface / EFB / XFB / viewport).
+    RedirectTraceLog();
   } else {
+    unsetenv("PETARI_RENDER_SCALE");
+  }
+  if (self.stereoSelected) {
+    // Stereoscopic window (beta): the stereo bridge reports to the same trace log. The engine picks the
+    // render scale (3x, 1920x1080 for 16:9) when stereo starts; the launcher does not set one for it.
+    RedirectTraceLog();
+    setenv("PETARI_STEREO_TRACE", "1", 1);
     unsetenv("PETARI_RENDER_SCALE");
   }
 }

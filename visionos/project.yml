@@ -16,6 +16,11 @@ targets:
     sources:
       - path: Sources
       - path: Resources/Assets.xcassets
+      # Stereoscopic window (beta): eye-selecting ShaderGraph material from Apple's RenderingAWindowedGameInStereo
+      # sample (see Stereo-Apple-LICENSE.txt, bundled).
+      - path: Resources/NativeStereo.usda
+      - path: Resources/NativeStereoPlaceholder.png
+      - path: Resources/Stereo-Apple-LICENSE.txt
     preBuildScripts:
       - name: Package engine framework (strip Licenses, fix Info.plist)
         basedOnDependencyAnalysis: false
@@ -71,3 +76,5 @@ targets:
       - sdk: QuartzCore.framework
       - sdk: UniformTypeIdentifiers.framework
       - sdk: SwiftUI.framework
+      - sdk: RealityKit.framework
+      - sdk: IOSurface.framework

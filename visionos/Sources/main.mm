@@ -10,6 +10,7 @@
 #import <UniformTypeIdentifiers/UniformTypeIdentifiers.h>
 #import "GalaxyVisionController.h"
 #import "GalaxyVisionSettings.h"
+#import "GalaxyVisionStereoEngine.h"
 #import "GalaxyVision-Swift.h"
 
 static NSURL *GVBase(void) {
@@ -140,6 +141,69 @@ static void GVShowSaveToast(void) {
   GVShowToast(@"Closing the window does not save.\nUse Pause \u203A \u201CSave your progress and quit\u201D to save.", 8);
 }
 
+// --- Stereoscopic window (beta) -----------------------------------------------------------------
+// Chosen in the launcher's View tab. Once the engine runs, the stereo bridge is requested (the engine
+// creates the eye IOSurfaces on its render thread); when it is ready the engine starts drawing both eyes
+// and a RealityKit screen (GalaxyVisionStereo.swift) is added over the game window as a child view
+// controller (again: not a UIWindow). If anything fails the game simply stays in the flat window and a
+// toast says why. The SDL window keeps presenting underneath, which paces the game.
+static UIViewController *sStereoContent;
+static NSTimer *sStereoTimer;
+
+static void GVStereoFailed(NSString *message) {
+  [sStereoTimer invalidate];
+  sStereoTimer = nil;
+  [GVStereoEngine applyEnabled:NO depth:1.0f convergence:1200.0f];
+  [GVStereoEngine setBridgeOpen:NO];
+  if (sStereoContent) {
+    [sStereoContent willMoveToParentViewController:nil];
+    [sStereoContent.view removeFromSuperview];
+    [sStereoContent removeFromParentViewController];
+    sStereoContent = nil;
+  }
+  fprintf(stderr, "GalaxyVision stereo: failed: %s\n", message.UTF8String);
+  GVShowToast([NSString stringWithFormat:@"Stereoscopic window couldn\u2019t start:\n%@\nThe flat window stays in use.", message], 12);
+}
+
+static void GVInstallStereoView(void) {
+  UIWindow *gameWindow = GVGameWindow();
+  UIViewController *host = gameWindow.rootViewController;
+  UIView *parent = host ? host.view : gameWindow;
+  if (!parent || sStereoContent) return;
+  UIViewController *content = [GVStereoFactory makeViewControllerOnError:^(NSString *message) { GVStereoFailed(message); }];
+  if (host) [host addChildViewController:content];
+  content.view.frame = parent.bounds;
+  content.view.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
+  [parent insertSubview:content.view atIndex:0];  // under any overlay or toast
+  if (host) [content didMoveToParentViewController:host];
+  sStereoContent = content;
+}
+
+static void GVStartStereo(void) {
+  __block BOOL requested = NO;
+  __block CFTimeInterval requestedAt = 0;
+  sStereoTimer = [NSTimer scheduledTimerWithTimeInterval:0.25 repeats:YES block:^(NSTimer *timer) {
+    if (!GVStereoEngine.engineStarted || !GVGameWindow()) return;  // the first start prepares shaders
+    if (!requested) {
+      requested = YES;
+      requestedAt = CACurrentMediaTime();
+      [GVStereoEngine setBridgeOpen:YES];
+      return;
+    }
+    const NSInteger status = GVStereoEngine.status;
+    if (status == 1) {
+      [timer invalidate];
+      sStereoTimer = nil;
+      [GVStereoEngine applySavedSettings];  // the engine starts drawing both eyes
+      GVInstallStereoView();
+    } else if (status == -1) {
+      GVStereoFailed(GVStereoEngine.error);
+    } else if (CACurrentMediaTime() - requestedAt > 20) {
+      GVStereoFailed(@"the engine did not open the eye images in time.");
+    }
+  }];
+}
+
 static void GVObserveGameScene(UIWindowScene *scene) {
   sGameScene = scene;
   GalaxyVisionController.shared.onOptionsRequested = ^{ GVShowOverlay(); };
@@ -170,6 +234,7 @@ static void GVHandOffToEngine(UIScene *scene, UISceneSession *session, UISceneCo
   [sEngineSceneDelegate scene:scene willConnectToSession:session options:options];
   [GalaxyVisionController.shared start];
   if ([scene isKindOfClass:UIWindowScene.class]) GVObserveGameScene((UIWindowScene *)scene);
+  if (GalaxyVisionSettings.stereoSelected) GVStartStereo();
 }
 
 - (void)scene:(UIScene *)scene willConnectToSession:(UISceneSession *)session options:(UISceneConnectionOptions *)options {

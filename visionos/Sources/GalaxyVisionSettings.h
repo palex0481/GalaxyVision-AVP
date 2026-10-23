@@ -5,7 +5,9 @@
 // (via @AppStorage with these keys) and the controller / engine start-up read them.
 NS_ASSUME_NONNULL_BEGIN
 
-extern NSString *const GVKeyViewMode;           // String: "flat" (others are not implemented yet)
+extern NSString *const GVKeyViewMode;           // String: "flat" (default) or "stereo" (Stereoscopic window, beta)
+extern NSString *const GVKeyStereoDepth;        // Double 0...2: eye separation scale (1 = default, 0 = no depth)
+extern NSString *const GVKeyStereoConvergence;  // Double 400...3000: game units to the zero-parallax plane (default 1200)
 extern NSString *const GVKeyPointerSensitivity; // Double 0.5...2.0, scales pointer speed (default 1.0)
 extern NSString *const GVKeyPointerMode;        // Int: 0 when moved, 1 always, 2 hidden
 extern NSString *const GVKeyGyroAim;            // Bool, PS pads with motion only (default off)
@@ -27,6 +29,9 @@ extern NSString *const GVKeySmoothMotion;       // Bool (only has an effect on >
 @property(class, readonly) double renderScale;
 @property(class, readonly) NSInteger aspect;
 @property(class, readonly) BOOL smoothMotion;
+@property(class, readonly) BOOL stereoSelected;      // view mode is the Stereoscopic window (beta)
+@property(class, readonly) float stereoDepth;
+@property(class, readonly) float stereoConvergence;
 // Exports settings that must exist before the engine starts (PETARI_RENDER_SCALE).
 + (void)applyStartupEnvironment;
 @end

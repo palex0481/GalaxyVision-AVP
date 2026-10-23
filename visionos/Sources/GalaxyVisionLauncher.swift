@@ -105,6 +105,34 @@ private struct SavingTab: View {
   }
 }
 
+/// Stereoscopic window tuning: eye separation and convergence (applied live while playing).
+struct StereoSettingsSection: View {
+  var inGame: Bool
+  var onChange: (() -> Void)? = nil
+  @AppStorage(GVKeyStereoDepth) private var depth = 1.0
+  @AppStorage(GVKeyStereoConvergence) private var convergence = 1200.0
+
+  var body: some View {
+    Section {
+      VStack(alignment: .leading) {
+        Text("Depth (eye separation): \(depth, specifier: "%.2f")x")
+        Slider(value: $depth, in: 0...2, step: 0.05)
+      }
+      VStack(alignment: .leading) {
+        Text("Convergence (screen plane distance): \(Int(convergence))")
+        Slider(value: $convergence, in: 400...3000, step: 50)
+      }
+      Button("Reset depth and convergence") { depth = 1.0; convergence = 1200.0 }
+    } header: {
+      Text("Stereoscopic window (beta)")
+    } footer: {
+      Text("Depth 0 is flat; higher separates the eyes more. Convergence is how far from the camera, in game units, things appear at the screen's surface: nearer values push more of the scene behind the window, farther values bring it out of it. The game HUD stays on the screen plane. Settings apply live from the options screen. If the stereo view cannot start, the flat window is used and a message says why; the trace is in Library/Caches/galaxyvision-trace.log.")
+    }
+    .onChange(of: depth) { _, _ in onChange?() }
+    .onChange(of: convergence) { _, _ in onChange?() }
+  }
+}
+
 struct LauncherView: View {
   let gameFound: Bool
   let onPlay: () -> Void
@@ -192,8 +220,24 @@ private struct ViewModeTab: View {
               if viewMode == "flat" { Image(systemName: "checkmark.circle.fill").foregroundStyle(.tint) }
             }
           }
-          comingSoon("Stereoscopic window", "Real depth per eye, same framing as the flat window.")
+          Button { viewMode = "stereo" } label: {
+            HStack {
+              VStack(alignment: .leading) {
+                HStack(spacing: 6) {
+                  Text("Stereoscopic window")
+                  Text("BETA").font(.caption2.bold()).padding(.horizontal, 6).padding(.vertical, 2)
+                    .background(.orange.opacity(0.85), in: Capsule())
+                }
+                Text("Real depth per eye in the window, same 16:9 framing as the flat window.").font(.caption).foregroundStyle(.secondary)
+              }
+              Spacer()
+              if viewMode == "stereo" { Image(systemName: "checkmark.circle.fill").foregroundStyle(.tint) }
+            }
+          }
           comingSoon("Immersive", "The game around you in an immersive space.")
+        }
+        if viewMode == "stereo" {
+          StereoSettingsSection(inGame: false)
         }
       }
       .navigationTitle("View")
@@ -292,6 +336,7 @@ private struct GraphicsTab: View {
   @AppStorage(GVKeyRenderScale) private var renderScale = 0.0
   @AppStorage(GVKeyAspect) private var aspect = -1
   @AppStorage(GVKeySmoothMotion) private var smoothMotion = false
+  @AppStorage(GVKeyViewMode) private var viewMode = "flat"
 
   var body: some View {
     NavigationStack {
@@ -318,6 +363,9 @@ private struct GraphicsTab: View {
           Text("Display")
         } footer: {
           Text("Aspect ratio is saved by the game and may need one more start to fully apply. Smooth motion only does something on 120 Hz displays, so it probably has no effect in a headset.")
+        }
+        if inGame && viewMode == "stereo" {
+          StereoSettingsSection(inGame: true, onChange: onDisplayChange)
         }
       }
       .navigationTitle("Graphics")

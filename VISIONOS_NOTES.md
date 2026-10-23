@@ -63,3 +63,23 @@ minimal app `visionos/GalaxyVision` compiles and links with the generic visionOS
   resign/background the shell shows a "Closing the window does not save" toast; the overlay and launcher repeat it.
   Aspect ratio and Smooth Motion are applied after the engine starts
   (aspect saved by the game for the next start; smooth motion needs >= 110 Hz).
+
+## Stereoscopic window (beta)
+
+Launcher > View > "Stereoscopic window (beta)"; flat stays the default (`gv.viewMode` = `flat` | `stereo`).
+Depth and convergence sliders: `gv.stereoDepth` (0-2, default 1) and `gv.stereoConvergence` (400-3000, default 1200).
+
+- Engine (`Stereo.cpp`): per game step, update/calcAnim once, then draw the scene twice (left, right) with a view
+  offset plus projection shear (zero parallax at the convergence distance). SmoothMotion is off while stereo is on.
+  Render scale is 3x so each eye is 1920x1080. Present modes in `Frame::stereoEye`: 1 left (eye image only),
+  2 right (eye image + window present, keeps vsync pacing), 3 mono (both eyes, used when the view stage isn't ready).
+- Bridge (`stereo_bridge.cpp`, `patch_aurora_stereo.py`): per eye, 4 IOSurfaces (BGRA 1920x1080) imported into Dawn
+  via SharedTextureMemoryIOSurface (+ SharedFenceMTLSharedEvent). The engine renders into them; the latest slot and a
+  sequence number are published after `OnSubmittedWorkDone`. No CPU readback.
+- App (`GalaxyVisionStereo.swift`): wraps the IOSurfaces as MTLTextures, a CADisplayLink blits newest slots into two
+  `LowLevelTexture`s shown on a 16:9 plane with `NativeStereo.usda` (camera-index switch; from Apple's
+  RenderingAWindowedGameInStereo sample, license bundled as `Stereo-Apple-LICENSE.txt`). Hosted as a child view
+  controller of the SDL window VC (not a new UIWindow, so no frosted blur).
+- Failure falls back to flat with a toast. Trace log: `Library/Caches/galaxyvision-trace.log`.
+- Known: the shear sign / depth direction is unverified on device; home menu / RmlUi overlays only render to the
+  flat window (hidden behind the stereo view); no HUD depth option; ImGui not in the eye images.

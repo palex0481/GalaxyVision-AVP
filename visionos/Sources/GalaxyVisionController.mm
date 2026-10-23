@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #import "GalaxyVisionController.h"
 #import "GalaxyVisionSettings.h"
+#import "GalaxyVisionStereoEngine.h"
 #import <GameController/GameController.h>
 #import <QuartzCore/QuartzCore.h>
 #import <UIKit/UIKit.h>
@@ -79,6 +80,7 @@ static const float kStickPointerSpeed = 1.2f;  // viewport widths per second at 
 - (void)applyDisplaySettingsNow {
   _engineSettingsApplied = NO;
   [self applyEngineSettings];
+  if (GalaxyVisionSettings.stereoSelected) [GVStereoEngine applySavedSettings];  // live depth / convergence
 }
 
 + (instancetype)shared {
@@ -110,6 +112,8 @@ static const float kStickPointerSpeed = 1.2f;  // viewport widths per second at 
     int result = galaxypad_engine_widescreen((int)aspect);
     NSLog(@"GalaxyVision: aspect ratio %d -> %d", now, result);
   }
+  // Stereoscopic window: the engine owns the frame pacing and turns Smooth Motion off while it is on.
+  if (GalaxyVisionSettings.stereoSelected) return;
   if (GalaxyVisionSettings.smoothMotion) {
     NSLog(@"GalaxyVision: smooth motion -> %d", galaxypad_engine_smooth_motion(1));
   } else if (galaxypad_engine_smooth_motion(-1)) {
