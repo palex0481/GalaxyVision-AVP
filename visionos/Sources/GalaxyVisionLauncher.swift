@@ -9,7 +9,7 @@ import UIKit
 final class GVLauncherFactory: NSObject {
   /// - gameFound: game data exists in Application Support/GalaxyPad/GameData/RMGE01.
   /// - onPlay: called on the main thread when the player taps Play (only offered when gameFound).
-  /// - onImport: the import placeholder (document picker, not implemented yet).
+  /// - onImport: unused; the launcher's Play tab imports game data itself.
   @objc static func makeViewController(gameFound: Bool,
                                        onPlay: @escaping () -> Void,
                                        onImport: @escaping () -> Void) -> UIViewController {
@@ -174,6 +174,11 @@ private struct PlayTab: View {
   let onPlay: () -> Void
   let onImport: () -> Void
   @State private var started = false
+  @State private var showPicker = false
+  @State private var importing = false
+  @State private var importMessage: String?
+  @State private var importFailed = false
+  @State private var imported = GVGameImporter.haveGame
 
   var body: some View {
     ScrollView {
@@ -195,19 +200,133 @@ private struct PlayTab: View {
           .disabled(started)
           Text("The first start prepares shaders and can take a while. Settings apply when you press Play. In game, pause and press R1 / RB on the controller (N64 pad: hold Start + Capture) for the options screen. Closing the window does not save: use Pause > Save your progress and quit.")
             .font(.footnote).foregroundStyle(.secondary)
+        } else if imported {
+          Label("Game data found", systemImage: "checkmark.seal.fill")
+            .foregroundStyle(.green)
+          Text("Game data imported. Close GalaxyVision completely and open it again to play.")
+            .font(.callout).multilineTextAlignment(.center)
         } else {
           Label("No game data found", systemImage: "exclamationmark.triangle.fill")
             .foregroundStyle(.orange)
-          Text("Place an extracted Super Mario Galaxy (RMGE01) folder in Application Support/GalaxyPad/GameData/RMGE01 (sys/main.dol must exist), or use Import (placeholder, not implemented yet).")
+          Text("Extract your Super Mario Galaxy (RMGE01) disc to a folder containing sys/ and files/, put it in Files on this device, then press Import and pick that folder.")
             .font(.callout).multilineTextAlignment(.center)
-          Button("Import game data…", action: onImport)
-            .buttonStyle(.bordered)
+          if importing {
+            ProgressView("Copying game data…")
+          } else {
+            Button("Import game data…") { showPicker = true }
+              .buttonStyle(.bordered)
+          }
           Button { } label: { Label("Play", systemImage: "play.fill").frame(minWidth: 200) }
             .buttonStyle(.borderedProminent).controlSize(.extraLarge).disabled(true)
+        }
+        if let importMessage {
+          Text(importMessage)
+            .font(.callout).multilineTextAlignment(.center)
+            .foregroundStyle(importFailed ? .red : .green)
         }
       }
       .padding(32)
       .frame(maxWidth: .infinity)
+    }
+    .fileImporter(isPresented: $showPicker, allowedContentTypes: [.folder, .item]) { result in
+      switch result {
+      case .failure(let error):
+        importFailed = true
+        importMessage = "Couldn't open the picker: \(error.localizedDescription)"
+      case .success(let url):
+        importing = true
+        importMessage = nil
+        DispatchQueue.global(qos: .userInitiated).async {
+          let outcome = GVGameImporter.importGame(from: url)
+          DispatchQueue.main.async {
+            importing = false
+            switch outcome {
+            case .success:
+              importFailed = false
+              importMessage = "Import finished."
+              imported = GVGameImporter.haveGame
+            case .failure(let error):
+              importFailed = true
+              importMessage = error.message
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+struct GVImportError: Error { let message: String }
+
+/// Copies an extracted RMGE01 disc folder (sys/main.dol + files/) into
+/// Application Support/GalaxyPad/GameData/RMGE01, the path main.mm checks at launch.
+enum GVGameImporter {
+  static var gameDir: URL {
+    FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+      .appendingPathComponent("GalaxyPad/GameData/RMGE01", isDirectory: true)
+  }
+  static var haveGame: Bool {
+    FileManager.default.fileExists(atPath: gameDir.appendingPathComponent("sys/main.dol").path)
+  }
+
+  private static func isGameRoot(_ url: URL) -> Bool {
+    let fm = FileManager.default
+    var dir: ObjCBool = false
+    return fm.fileExists(atPath: url.appendingPathComponent("sys/main.dol").path)
+      && fm.fileExists(atPath: url.appendingPathComponent("files").path, isDirectory: &dir) && dir.boolValue
+  }
+
+  /// The picked folder itself, or a child such as RMGE01 / DATA / P-RMGE (one or two levels down).
+  private static func findGameRoot(in url: URL) -> URL? {
+    if isGameRoot(url) { return url }
+    let fm = FileManager.default
+    let kids = (try? fm.contentsOfDirectory(at: url, includingPropertiesForKeys: [.isDirectoryKey])) ?? []
+    for kid in kids where isGameRoot(kid) { return kid }
+    for kid in kids {
+      let grand = (try? fm.contentsOfDirectory(at: kid, includingPropertiesForKeys: [.isDirectoryKey])) ?? []
+      for g in grand where isGameRoot(g) { return g }
+    }
+    return nil
+  }
+
+  static func importGame(from picked: URL) -> Result<Void, GVImportError> {
+    let scoped = picked.startAccessingSecurityScopedResource()
+    defer { if scoped { picked.stopAccessingSecurityScopedResource() } }
+    let ext = picked.pathExtension.lowercased()
+    if ["iso", "wbfs", "rvz", "gcz", "wia", "ciso", "nkit"].contains(ext) {
+      return .failure(GVImportError(message: "Disc image files (.\(ext)) aren't supported yet. Extract the disc to a folder with sys/ and files/ (for example with Dolphin: right-click the game > Properties > Filesystem > Extract Entire Disc), then pick that folder."))
+    }
+    var isDir: ObjCBool = false
+    guard FileManager.default.fileExists(atPath: picked.path, isDirectory: &isDir), isDir.boolValue else {
+      return .failure(GVImportError(message: "That's a file, not a folder. Pick the extracted game folder that contains sys/ and files/."))
+    }
+    guard let root = findGameRoot(in: picked) else {
+      return .failure(GVImportError(message: "That folder doesn't look like extracted game data. It needs sys/main.dol and a files/ folder (or a RMGE01 or DATA folder that has them)."))
+    }
+    if let id = try? Data(contentsOf: root.appendingPathComponent("sys/boot.bin"), options: .mappedIfSafe).prefix(6),
+       let s = String(data: id, encoding: .ascii), s.count == 6, !s.hasPrefix("RMGE01") {
+      return .failure(GVImportError(message: "This disc is \(s), not the USA Super Mario Galaxy (RMGE01)."))
+    }
+    let fm = FileManager.default
+    let parent = gameDir.deletingLastPathComponent()
+    let staging = parent.appendingPathComponent("RMGE01.importing", isDirectory: true)
+    do {
+      try fm.createDirectory(at: parent, withIntermediateDirectories: true)
+      if fm.fileExists(atPath: staging.path) { try fm.removeItem(at: staging) }
+      try fm.copyItem(at: root, to: staging)
+      guard isGameRoot(staging) else {
+        try? fm.removeItem(at: staging)
+        return .failure(GVImportError(message: "The copy didn't finish correctly. Nothing was changed; try again."))
+      }
+      if fm.fileExists(atPath: gameDir.path) {
+        _ = try fm.replaceItemAt(gameDir, withItemAt: staging)
+      } else {
+        try fm.moveItem(at: staging, to: gameDir)
+      }
+      return .success(())
+    } catch {
+      try? fm.removeItem(at: staging)
+      return .failure(GVImportError(message: "Copying failed: \(error.localizedDescription). Your previous game data (if any) was kept."))
     }
   }
 }
