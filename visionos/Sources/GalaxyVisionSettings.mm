@@ -10,7 +10,7 @@ NSString *const GVKeyGyroAim = @"gv.gyroAim";
 NSString *const GVKeyGyroInvertX = @"gv.gyroInvertX";
 NSString *const GVKeyGyroInvertY = @"gv.gyroInvertY";
 NSString *const GVKeyBButtonJumps = @"gv.bButtonJumps";
-NSString *const GVKeyRenderScale = @"gv.renderScale";
+NSString *const GVKeyRenderScale = @"gv.supersampling";
 NSString *const GVKeyAspect = @"gv.aspect";
 NSString *const GVKeySmoothMotion = @"gv.smoothMotion";
 
@@ -40,13 +40,10 @@ static NSUserDefaults *Defaults(void) { return NSUserDefaults.standardUserDefaul
 + (BOOL)gyroInvertX { return [Defaults() boolForKey:GVKeyGyroInvertX]; }
 + (BOOL)gyroInvertY { return [Defaults() boolForKey:GVKeyGyroInvertY]; }
 + (BOOL)bButtonJumps { return [Defaults() boolForKey:GVKeyBButtonJumps]; }
-// Only 2x and 3x of the game's framebuffer (below the 2560x1440 headset window) are offered. Anything above (the removed 4x option, or a stale value) means native: a
-// framebuffer larger than the window's drawable broke the window's aspect ratio.
+// Only 2x and 3x of the game's framebuffer (640x456; both at or below the 2560x1440 headset window) are
+// offered. Anything above (the old 4x option) exceeds the window's drawable and broke the aspect ratio,
+// so it is never honoured: it means native.
 + (double)renderScale {
-  // The Supersampling picker was removed from the UI (its 2x/3x were below native and confusing), so
-  // a previously stored value is ignored: always native. The env path in applyStartupEnvironment stays
-  // for debugging (set GV_ALLOW_RENDER_SCALE=1 in the scheme to honour the stored value).
-  if (!getenv("GV_ALLOW_RENDER_SCALE")) return 0.0;
   const double v = [Defaults() doubleForKey:GVKeyRenderScale];
   return (v >= 1.0 && v <= 3.0) ? v : 0.0;
 }

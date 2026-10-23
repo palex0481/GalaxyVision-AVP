@@ -199,19 +199,20 @@ static const float kStickPointerSpeed = 1.2f;  // viewport widths per second at 
   if (recenterNow) [self recenter];
 
   // Options overlay shortcut.
-  //  - PlayStation / Xbox pads: a press of the right shoulder (R1 / RB), like SM64-Vision's R button.
-  //    Edge-triggered, so holding it does not reopen the overlay. R1 is never forwarded to the game.
-  //    Options stays Plus (pause) and does not open the overlay.
+  // Only while the game's own pause menu is up (galaxypad_engine_game_paused), like SM64-Vision.
+  //  - PlayStation / Xbox pads: a press of the right shoulder (R1 / RB). Edge-triggered, so holding
+  //    it does not reopen the overlay. R1 is never forwarded to the game. Options stays Plus (pause).
   //  - N64 pad: R is spin, so Start + Capture held for 0.5 s.
+  const BOOL gamePaused = galaxypad_engine_game_paused() != 0;
   if (pad && !n64) {
     const BOOL r1 = pad.rightShoulder.pressed;
-    const BOOL fire = r1 && !_r1Held;
+    const BOOL fire = r1 && !_r1Held && gamePaused;
     _r1Held = r1;
     if (fire && self.onOptionsRequested) { self.onOptionsRequested(); return; }
   } else {
     _r1Held = NO;
   }
-  if (pad && n64 && pad.buttonMenu.pressed && _captureHeld) {
+  if (pad && n64 && gamePaused && pad.buttonMenu.pressed && _captureHeld) {
     buttons &= ~(kPlus | kMinus);  // do not feed the combo itself to the game
     if (_comboStart == 0) _comboStart = now;
     if (!_comboFired && now - _comboStart >= 0.5) {

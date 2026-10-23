@@ -79,7 +79,7 @@ private struct SavingTab: View {
         } header: {
           Text("Saving")
         } footer: {
-          Text("Open this screen any time with the Options button at the top right of the game, or press R1 (PlayStation) / RB (Xbox). On the N64 pad, hold Start + Capture for half a second.")
+          Text("Open this screen from the game's pause menu: pause, then press R1 (PlayStation) / RB (Xbox). On the N64 pad, pause and hold Start + Capture for half a second.")
         }
         Section {
           Button(role: .destructive) { confirmQuit = true } label: {
@@ -154,7 +154,7 @@ private struct PlayTab: View {
           .buttonStyle(.borderedProminent)
           .controlSize(.extraLarge)
           .disabled(started)
-          Text("The first start prepares shaders and can take a while. Settings apply when you press Play. In game, tap the Options button at the top right (or press R1 / RB on the controller; on the N64 pad hold Start + Capture) for the options screen. Closing the window does not save: use Pause > Save your progress and quit.")
+          Text("The first start prepares shaders and can take a while. Settings apply when you press Play. In game, pause and press R1 / RB on the controller (N64 pad: hold Start + Capture) for the options screen. Closing the window does not save: use Pause > Save your progress and quit.")
             .font(.footnote).foregroundStyle(.secondary)
         } else {
           Label("No game data found", systemImage: "exclamationmark.triangle.fill")
@@ -289,12 +289,24 @@ private struct GraphicsTab: View {
   /// Shown over the running game: aspect ratio and smooth motion apply right away.
   var inGame = false
   var onDisplayChange: (() -> Void)? = nil
+  @AppStorage(GVKeyRenderScale) private var renderScale = 0.0
   @AppStorage(GVKeyAspect) private var aspect = -1
   @AppStorage(GVKeySmoothMotion) private var smoothMotion = false
 
   var body: some View {
     NavigationStack {
       Form {
+        Section {
+          Picker("Supersampling", selection: $renderScale) {
+            Text("Off (native, default)").tag(0.0)
+            Text("3x game size (near native)").tag(3.0)
+            Text("2x game size (lower, faster)").tag(2.0)
+          }
+        } header: {
+          Text("Supersampling")
+        } footer: {
+          Text("Off draws at the headset window's native 2560x1440 and is the sharpest. 3x renders at about 2432x1368 (just under native) and 2x at about 1625x1216, which is softer but lighter. Nothing above native is offered because it breaks the picture's size and aspect. Applies on the next start.")
+        }
         Section {
           Picker("Aspect ratio", selection: $aspect) {
             Text("Engine default").tag(-1)

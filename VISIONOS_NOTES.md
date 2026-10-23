@@ -44,15 +44,17 @@ minimal app `visionos/GalaxyVision` compiles and links with the generic visionOS
     C-down shoots (while Capture is held it nudges down instead), Capture recenters, Start pauses, Start + Capture held 0.5 s opens the overlay (R is spin).
 - `GalaxyVisionLauncher.swift`: SwiftUI launcher (Play / View / Controls / Graphics). It lives in the scene
   delegate; Play hides it and hands the scene to the engine's SDL scene delegate (no second UIApplicationMain).
-- Graphics: the MSAA row was removed (not usable in this engine) and the Supersampling picker was removed too (2x/3x were below
-  the engine's native size and confusing). Rendering is always engine-native; the stored `gv.renderScale` is ignored unless the
-  process env has `GV_ALLOW_RENDER_SCALE=1`, in which case it maps to `PETARI_RENDER_SCALE` (debug only; the old 4x, with a
-  framebuffer larger than the window drawable, showed the picture at ~80% size, anchored top-left; with a non-default scale the shell
-  writes PETARI_TRACE_BOOT output to `Library/Caches/galaxyvision-trace.log`).
-- In game: a subtle "Options" pill (top right, own non-key passthrough UIWindow, shown once the engine reports started, with a
-  7 s hint toast) opens the overlay; so does R1/RB on PS/Xbox pads. The overlay's Saving tab has "Quit GalaxyVision..." (confirmation
-  dialog, calls galaxypad_engine_quit, no save). The engine's PauseMenu is decompiled game code inside the framework (the shell
-  can't add an entry without rebuilding the engine; no exported pause-state query), so no hook was added.
+- Graphics: no MSAA row (not usable in this engine). Supersampling picker: "Off (native, default)" (engine default = 2560x1440
+  window pixels), "3x" (PETARI_RENDER_SCALE=3, EFB ~2432x1368) and "2x" (~1625x1216). All options are at or below native: a framebuffer
+  larger than the drawable (the old 4x) showed the picture at ~80% size, anchored top-left, so nothing above native is offered. The
+  stored key is `gv.supersampling` (renamed to reset stale values to Off). With a non-default scale the shell writes PETARI_TRACE_BOOT
+  output to `Library/Caches/galaxyvision-trace.log`.
+- In game there is NO on-screen button or hint toast. The options overlay opens only while the game's own pause menu is up
+  (`galaxypad_engine_game_paused()`, an engine export built from the PauseMenu.Open/Close milestones): R1/RB on PS/Xbox pads, Start +
+  Capture held 0.5 s on the N64 pad. The overlay's Saving tab has "Quit GalaxyVision..." (confirmation dialog, calls
+  galaxypad_engine_quit, no save).
+- The overlay and the save toast are SUBVIEWS of the SDL game window (child VC on its rootViewController), never extra UIWindows:
+  visionOS gives every extra UIWindow a glass material, and a full-scene window (the old Options pill, 20ea626) blurred the whole game.
 - Overlay (R1/RB press, pill, or N64 pad Start + Capture held 0.5 s; Options is pause only) -> options overlay (second UIWindow in the game's
   scene, game paused via galaxypad_engine_pause, no input forwarded). Pointer/gyro/button settings apply live, aspect and
   smooth motion are re-applied to the engine. The engine cannot return to the

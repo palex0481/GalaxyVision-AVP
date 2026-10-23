@@ -47,80 +47,41 @@ static BOOL GVEngineHost(void) {
 
 // --- In-game options overlay and save reminder -------------------------------------------------
 // The engine cannot return to the launcher mid-game (its SDL window and render loop live until the
-// process exits), so the options are an overlay window over the game: a SwiftUI view in a second
-// UIWindow of the same scene, shown by the pad's options combo. The game is held on its frame
-// (galaxypad_engine_pause) and gets no input while it is up.
+// process exits), so the options are an overlay over the game, shown by R1 / RB (N64 pad: Start +
+// Capture held) while the game's own pause menu is up. The game is held on its frame
+// (galaxypad_engine_pause) and gets no input while the overlay is up.
+//
+// The overlay and the toast are plain subviews of the SDL game window, NOT extra UIWindows: every
+// additional UIWindow in a visionOS scene gets the system's glass background material, which
+// blurred the whole game picture behind it (the "fuzzy window" regression of 20ea626).
 static UIWindowScene *sGameScene;
-static UIWindow *sOverlayWindow;
-static UIWindow *sToastWindow;
+static UIViewController *sOverlayContent;
+static UIView *sToastView;
 static BOOL sSceneResigned;
-static UIWindow *sPillWindow;
-static void GVShowToast(NSString *text, NSTimeInterval seconds);
 
-// A small always-visible "Options" pill over the game (top right). It sits in its own UIWindow that
-// never becomes key (the engine's window keeps focus and the controller) and lets every touch that
-// misses the pill through to the game. Pinch-selectable like any button.
-@interface GVPassthroughWindow : UIWindow
-@property(nonatomic, weak) UIView *pill;
-@end
-@implementation GVPassthroughWindow
-- (BOOL)canBecomeKeyWindow { return NO; }
-- (UIView *)hitTest:(CGPoint)point withEvent:(UIEvent *)event {
-  UIView *hit = [super hitTest:point withEvent:event];
-  UIView *pill = self.pill;
-  if (pill && hit && (hit == pill || [hit isDescendantOfView:pill])) return hit;
+// The engine's SDL window: the scene's first window that is not hidden.
+static UIWindow *GVGameWindow(void) {
+  for (UIWindow *w in sGameScene.windows) {
+    if (!w.hidden) return w;
+  }
   return nil;
-}
-@end
-
-static void GVShowOverlay(void);
-
-static void GVShowPill(void) {
-  if (sPillWindow || !sGameScene) return;
-  GVPassthroughWindow *window = [[GVPassthroughWindow alloc] initWithWindowScene:sGameScene];
-  window.windowLevel = UIWindowLevelAlert + 3;
-  window.backgroundColor = UIColor.clearColor;
-  UIViewController *vc = [[UIViewController alloc] init];
-  vc.view.backgroundColor = UIColor.clearColor;
-  UIButtonConfiguration *config = [UIButtonConfiguration borderedButtonConfiguration];
-  config.title = @"Options";
-  config.image = [UIImage systemImageNamed:@"gearshape.fill"];
-  config.imagePadding = 6;
-  config.cornerStyle = UIButtonConfigurationCornerStyleCapsule;
-  config.contentInsets = NSDirectionalEdgeInsetsMake(8, 14, 8, 14);
-  UIButton *button = [UIButton buttonWithConfiguration:config primaryAction:[UIAction actionWithHandler:^(UIAction *a) {
-    GVShowOverlay();
-  }]];
-  button.alpha = 0.6;  // subtle until looked at / pressed
-  button.accessibilityLabel = @"GalaxyVision options";
-  [button sizeToFit];
-  CGSize size = button.bounds.size;
-  button.frame = CGRectMake(CGRectGetWidth(vc.view.bounds) - size.width - 24, 24, size.width, size.height);
-  button.autoresizingMask = UIViewAutoresizingFlexibleLeftMargin | UIViewAutoresizingFlexibleBottomMargin;
-  [vc.view addSubview:button];
-  window.pill = button;
-  window.rootViewController = vc;
-  window.hidden = NO;
-  sPillWindow = window;
 }
 
 static void GVHideOverlay(void) {
-  if (!sOverlayWindow) return;
-  sOverlayWindow.hidden = YES;
-  sOverlayWindow = nil;
-  sPillWindow.hidden = NO;
+  if (!sOverlayContent) return;
+  [sOverlayContent willMoveToParentViewController:nil];
+  [sOverlayContent.view removeFromSuperview];
+  [sOverlayContent removeFromParentViewController];
+  sOverlayContent = nil;
   galaxypad_engine_pause(0);
   GalaxyVisionController.shared.inputSuspended = NO;
-  for (UIWindow *w in sGameScene.windows) {
-    if (!w.hidden && w != sToastWindow && w != sPillWindow) { [w makeKeyWindow]; break; }
-  }
 }
 
 static void GVShowOverlay(void) {
-  if (sOverlayWindow || !sGameScene) return;
+  UIWindow *gameWindow = GVGameWindow();
+  if (sOverlayContent || !gameWindow) return;
   GalaxyVisionController.shared.inputSuspended = YES;
   galaxypad_engine_pause(1);
-  sPillWindow.hidden = YES;
   UIViewController *content = [GVOverlayFactory makeViewControllerOnDisplayChange:^{
     [GalaxyVisionController.shared applyDisplaySettingsNow];
   } onResume:^{ GVHideOverlay(); } onQuit:^{
@@ -129,11 +90,14 @@ static void GVShowOverlay(void) {
     GVHideOverlay();
     galaxypad_engine_quit();
   }];
-  UIWindow *window = [[UIWindow alloc] initWithWindowScene:sGameScene];
-  window.windowLevel = UIWindowLevelAlert + 10;
-  window.rootViewController = content;
-  sOverlayWindow = window;
-  [window makeKeyAndVisible];
+  UIViewController *host = gameWindow.rootViewController;
+  UIView *parent = host ? host.view : gameWindow;
+  if (host) [host addChildViewController:content];
+  content.view.frame = parent.bounds;
+  content.view.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
+  [parent addSubview:content.view];
+  if (host) [content didMoveToParentViewController:host];
+  sOverlayContent = content;
 }
 
 // Saving: the engine only saves through its own save sequence (startGameDataSaveSequence: story and
@@ -143,17 +107,14 @@ static void GVShowOverlay(void) {
 // never written directly. So: remember that the scene lost focus and, when it comes back, remind
 // the player that closing the window does not save.
 static void GVShowToast(NSString *text, NSTimeInterval seconds) {
-  if (sToastWindow || !sGameScene) return;
-  UIWindow *window = [[UIWindow alloc] initWithWindowScene:sGameScene];
-  window.windowLevel = UIWindowLevelAlert + 5;
-  window.userInteractionEnabled = NO;
-  window.backgroundColor = UIColor.clearColor;
-  UIViewController *vc = [[UIViewController alloc] init];
-  vc.view.backgroundColor = UIColor.clearColor;
+  UIWindow *gameWindow = GVGameWindow();
+  UIView *parent = gameWindow.rootViewController ? gameWindow.rootViewController.view : gameWindow;
+  if (sToastView || !parent) return;
   UIVisualEffectView *panel =
       [[UIVisualEffectView alloc] initWithEffect:[UIBlurEffect effectWithStyle:UIBlurEffectStyleSystemMaterialDark]];
   panel.layer.cornerRadius = 20;
   panel.clipsToBounds = YES;
+  panel.userInteractionEnabled = NO;
   UILabel *label = [[UILabel alloc] init];
   label.text = text;
   label.numberOfLines = 0;
@@ -161,19 +122,17 @@ static void GVShowToast(NSString *text, NSTimeInterval seconds) {
   label.textColor = UIColor.whiteColor;
   label.font = [UIFont preferredFontForTextStyle:UIFontTextStyleHeadline];
   [panel.contentView addSubview:label];
-  [vc.view addSubview:panel];
-  CGFloat width = MIN(560, vc.view.bounds.size.width - 40);
+  const CGFloat width = MAX(200, MIN(560, parent.bounds.size.width - 40));
   panel.frame = CGRectMake(0, 0, width, 96);
   label.frame = CGRectInset(panel.bounds, 16, 12);
   panel.autoresizingMask = UIViewAutoresizingFlexibleLeftMargin | UIViewAutoresizingFlexibleRightMargin |
                            UIViewAutoresizingFlexibleTopMargin;
-  panel.center = CGPointMake(CGRectGetMidX(vc.view.bounds), CGRectGetMaxY(vc.view.bounds) - 80);
-  window.rootViewController = vc;
-  window.hidden = NO;
-  sToastWindow = window;
+  panel.center = CGPointMake(CGRectGetMidX(parent.bounds), CGRectGetMaxY(parent.bounds) - 80);
+  [parent addSubview:panel];
+  sToastView = panel;
   dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(seconds * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
-    window.hidden = YES;
-    if (sToastWindow == window) sToastWindow = nil;
+    [panel removeFromSuperview];
+    if (sToastView == panel) sToastView = nil;
   });
 }
 
@@ -181,23 +140,9 @@ static void GVShowSaveToast(void) {
   GVShowToast(@"Closing the window does not save.\nUse Pause \u203A \u201CSave your progress and quit\u201D to save.", 8);
 }
 
-// Once the engine has finished preparing shaders and the game runs, show the Options pill and a
-// short hint about it (the engine's own pause menu has no entry for the launcher options).
-static void GVWaitForGameStart(void) {
-  dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(1 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
-    if (galaxypad_engine_started()) {
-      GVShowPill();
-      GVShowToast(@"Options: tap the Options button at the top right,\nor press R1 / RB on the controller.", 7);
-    } else {
-      GVWaitForGameStart();
-    }
-  });
-}
-
 static void GVObserveGameScene(UIWindowScene *scene) {
   sGameScene = scene;
   GalaxyVisionController.shared.onOptionsRequested = ^{ GVShowOverlay(); };
-  GVWaitForGameStart();
   NSNotificationCenter *nc = NSNotificationCenter.defaultCenter;
   void (^resigned)(NSNotification *) = ^(NSNotification *n) { sSceneResigned = YES; };
   [nc addObserverForName:UISceneWillDeactivateNotification object:scene queue:NSOperationQueue.mainQueue usingBlock:resigned];
@@ -206,7 +151,7 @@ static void GVObserveGameScene(UIWindowScene *scene) {
               usingBlock:^(NSNotification *n) {
     if (!sSceneResigned) return;
     sSceneResigned = NO;
-    if (galaxypad_engine_started() && !sOverlayWindow) GVShowSaveToast();
+    if (galaxypad_engine_started() && !sOverlayContent) GVShowSaveToast();
   }];
 }
 
