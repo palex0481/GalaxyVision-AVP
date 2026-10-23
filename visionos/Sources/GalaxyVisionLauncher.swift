@@ -113,6 +113,10 @@ struct StereoSettingsSection: View {
   @AppStorage(GVKeyStereoConvergence) private var convergence = 1200.0
   @AppStorage(GVKeyStereoResolution) private var resolution = 720
   @AppStorage(GVKeyStereoSharp) private var sharp = true
+  @AppStorage(GVKeyStereoScreenScale) private var screenScale = 1.0
+  @AppStorage(GVKeyStereoScreenX) private var screenX = 0.0
+  @AppStorage(GVKeyStereoScreenY) private var screenY = 0.0
+  @AppStorage(GVKeyStereoScreenZ) private var screenZ = 0.0
 
   var body: some View {
     Section {
@@ -136,6 +140,29 @@ struct StereoSettingsSection: View {
       Text("Stereoscopic window (beta)")
     } footer: {
       Text("Stereo resolution is the size the game is drawn at for each eye (it is drawn twice, so a lower size runs faster and smoother; High looks sharpest and runs slowest). Sharp upscaling (MetalFX) draws at Low, Medium or Balanced and enlarges the picture to the full eye size with Apple\u{2019}s upscaler, so it looks crisper than a plain stretch for about the same speed; it does nothing at High, and the plain stretch is used if it can\u{2019}t start. Depth 0 is flat; higher separates the eyes more. Convergence is how far from the camera, in game units, things appear at the screen's surface: nearer values push more of the scene behind the window, farther values bring it out of it. The game HUD stays on the screen plane. Settings apply live from the options screen. If the stereo view cannot start, the flat window is used and a message says why; the trace is in Library/Caches/galaxyvision-trace.log.")
+    }
+    Section {
+      VStack(alignment: .leading) {
+        Text("Picture size: \(Int(screenScale * 100)) %")
+        Slider(value: $screenScale, in: 0.25...1.5, step: 0.05)
+      }
+      VStack(alignment: .leading) {
+        Text("Left \u{2194} right: \(Int(screenX * 100)) %")
+        Slider(value: $screenX, in: -0.5...0.5, step: 0.01)
+      }
+      VStack(alignment: .leading) {
+        Text("Down \u{2194} up: \(Int(screenY * 100)) %")
+        Slider(value: $screenY, in: -0.5...0.5, step: 0.01)
+      }
+      VStack(alignment: .leading) {
+        Text("Away \u{2194} towards you: \(Int(screenZ * 100)) cm")
+        Slider(value: $screenZ, in: -0.2...0.3, step: 0.01)
+      }
+      Button("Reset screen position and size") { screenScale = 1.0; screenX = 0.0; screenY = 0.0; screenZ = 0.0 }
+    } header: {
+      Text("Screen position (Stereoscopic window)")
+    } footer: {
+      Text("Moves and resizes the 3D picture inside its window. The window itself is moved and resized with the system grab bar and corner handles as usual; the picture always fits inside it at 100 %. Above 100 % or shifted far, the window\u{2019}s edge may cut the picture off (not tested yet). While this options screen is open the 3D picture is hidden, so the change shows when you resume. Reset puts everything back.")
     }
     .onChange(of: depth) { _, _ in onChange?() }
     .onChange(of: convergence) { _, _ in onChange?() }

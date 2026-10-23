@@ -7,6 +7,10 @@ NSString *const GVKeyViewMode = @"gv.viewMode";
 NSString *const GVKeyStereoDepth = @"gv.stereoDepth";
 NSString *const GVKeyStereoConvergence = @"gv.stereoConvergence";
 NSString *const GVKeyStereoSharp = @"gv.stereoSharp";
+NSString *const GVKeyStereoScreenScale = @"gv.stereoScreenScale";
+NSString *const GVKeyStereoScreenX = @"gv.stereoScreenX";
+NSString *const GVKeyStereoScreenY = @"gv.stereoScreenY";
+NSString *const GVKeyStereoScreenZ = @"gv.stereoScreenZ";
 NSString *const GVKeyStereoResolution = @"gv.stereoResolution";
 NSString *const GVKeyShowFPS = @"gv.showFPS";
 NSString *const GVKeyAmbientGlow = @"gv.ambientGlow";
@@ -34,6 +38,10 @@ static NSUserDefaults *Defaults(void) { return NSUserDefaults.standardUserDefaul
     GVKeyStereoConvergence: @1200.0,
     GVKeyStereoResolution: @720,
     GVKeyStereoSharp: @YES,
+    GVKeyStereoScreenScale: @1.0,
+    GVKeyStereoScreenX: @0.0,
+    GVKeyStereoScreenY: @0.0,
+    GVKeyStereoScreenZ: @0.0,
     GVKeyShowFPS: @YES,
     GVKeyTiltSteer: @YES,
     GVKeyAmbientGlow: @NO,

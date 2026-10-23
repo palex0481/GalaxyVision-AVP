@@ -154,9 +154,11 @@ final class GVStereoRenderer: NSObject, ObservableObject {
   }
 
   /// Keep the game's 16:9 framing; extra window space is letterboxed.
-  func fit(width: Float, height: Float) {
+  /// The optional screen controls (size, shift) default to "unchanged": scale 1 and no shift is the plain fit.
+  func fit(width: Float, height: Float, scale: Float = 1, shiftX: Float = 0, shiftY: Float = 0, shiftZ: Float = 0) {
     let fit = max(0.001, min(width, height / Self.aspect))
-    screen.scale = SIMD3<Float>(repeating: fit)
+    screen.scale = SIMD3<Float>(repeating: fit * max(0.05, scale))
+    screen.position = SIMD3<Float>(shiftX * width, shiftY * height, shiftZ)
   }
 
   func start() {
@@ -283,6 +285,11 @@ final class GVStereoTiming: @unchecked Sendable {
 struct GVStereoView: View {
   @StateObject private var renderer = GVStereoRenderer()
   @Environment(\.physicalMetrics) private var physicalMetrics
+  // Screen controls (Stereoscopic window settings): read live, so changes show as soon as the view is on screen.
+  @AppStorage(GVKeyStereoScreenScale) private var screenScale = 1.0
+  @AppStorage(GVKeyStereoScreenX) private var screenX = 0.0
+  @AppStorage(GVKeyStereoScreenY) private var screenY = 0.0
+  @AppStorage(GVKeyStereoScreenZ) private var screenZ = 0.0
   let onError: (String) -> Void
 
   var body: some View {
@@ -291,9 +298,9 @@ struct GVStereoView: View {
       let h = Float(physicalMetrics.convert(geometry.size.height, to: .meters))
       RealityView { content in
         content.add(renderer.screen)
-        renderer.fit(width: w, height: h)
+        renderer.fit(width: w, height: h, scale: Float(screenScale), shiftX: Float(screenX), shiftY: Float(screenY), shiftZ: Float(screenZ))
       } update: { _ in
-        renderer.fit(width: w, height: h)
+        renderer.fit(width: w, height: h, scale: Float(screenScale), shiftX: Float(screenX), shiftY: Float(screenY), shiftZ: Float(screenZ))
       }
       .background(.black)
     }
