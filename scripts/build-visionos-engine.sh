@@ -12,3 +12,4 @@ cmake -S "$root/ref/galaxypad-engine" -B "$build" -G Ninja \
   -DPETARI_PIPELINE_STAGE_SEEDS="$build/pipeline-seeds-source"
 cmake --build "$build" --target GalaxyPadEngine --parallel "${GALAXYPAD_BUILD_JOBS:-6}" -- -k 0
 echo "Built $build/native/app/GalaxyPadEngine.framework"
+bash "$root/scripts/package-visionos-framework.sh" "$build/native/app/GalaxyPadEngine.framework" 2.0

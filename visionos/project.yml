@@ -15,6 +15,11 @@ targets:
     platform: visionOS
     sources:
       - path: Sources
+    preBuildScripts:
+      - name: Package engine framework (strip Licenses, fix Info.plist)
+        basedOnDependencyAnalysis: false
+        script: |
+          "$SRCROOT/../scripts/package-visionos-framework.sh" "$ENGINE_BUILD_DIR/GalaxyPadEngine.framework" "$XROS_DEPLOYMENT_TARGET"
     info:
       path: Info.plist
       properties:

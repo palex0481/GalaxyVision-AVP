@@ -109,6 +109,7 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 4DD9092A675646DF6AFBDBED /* Build configuration list for PBXNativeTarget "GalaxyVision" */;
 			buildPhases = (
+				ADFD9ECB5C416005010757D3 /* Package engine framework (strip Licenses, fix Info.plist) */,
 				5E57A39EF599A9AB8EE692B8 /* Sources */,
 				859E5650481E745B5C2A508E /* Frameworks */,
 				136B05921FD0A1EDD19A121C /* Embed Frameworks */,
@@ -157,6 +158,28 @@
 			);
 		};
 /* End PBXProject section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		ADFD9ECB5C416005010757D3 /* Package engine framework (strip Licenses, fix Info.plist) */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "Package engine framework (strip Licenses, fix Info.plist)";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"$SRCROOT/../scripts/package-visionos-framework.sh\" \"$ENGINE_BUILD_DIR/GalaxyPadEngine.framework\" \"$XROS_DEPLOYMENT_TARGET\"\n";
+		};
+/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		5E57A39EF599A9AB8EE692B8 /* Sources */ = {
