@@ -284,8 +284,6 @@ private struct ControlsTab: View {
   @AppStorage(GVKeyGyroInvertX) private var invertX = false
   @AppStorage(GVKeyGyroInvertY) private var invertY = false
   @AppStorage(GVKeyBButtonJumps) private var bJumps = true
-  @AppStorage(GVKeyTiltSteer) private var tiltSteer = true
-  @AppStorage(GVKeyTiltInvert) private var tiltInvert = false
 
   var body: some View {
     NavigationStack {
@@ -300,14 +298,6 @@ private struct ControlsTab: View {
             Text("Always").tag(1)
             Text("Hidden").tag(2)
           }
-        }
-        Section {
-          Toggle("Lean the pad to steer surfing (PlayStation controllers)", isOn: $tiltSteer)
-          Toggle("Invert lean", isOn: $tiltInvert).disabled(!tiltSteer)
-        } header: {
-          Text("Ray surfing")
-        } footer: {
-          Text("Ray surfing steers by tilt. The left stick always does it (a firm push left or right is a full turn). With a DualSense you can also lean the pad left or right like a wheel; use Invert lean if it turns the wrong way.")
         }
         Section {
           Toggle("Gyro aim (PlayStation controllers)", isOn: $gyroAim)
