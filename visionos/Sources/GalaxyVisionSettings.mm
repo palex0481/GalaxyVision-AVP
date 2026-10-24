@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #import "GalaxyVisionSettings.h"
+#import "GalaxyVisionController.h"
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -19,6 +20,7 @@ NSString *const GVKeyTiltInvert = @"gv.tiltInvert";
 NSString *const GVKeyBButtonJumps = @"gv.bButtonJumps";
 NSString *const GVKeyAspect = @"gv.aspect";
 NSString *const GVKeySmoothMotion = @"gv.smoothMotion";
+NSString *const GVKeyMute = @"gv.mute";
 
 static NSUserDefaults *Defaults(void) { return NSUserDefaults.standardUserDefaults; }
 
@@ -40,6 +42,7 @@ static NSUserDefaults *Defaults(void) { return NSUserDefaults.standardUserDefaul
     GVKeyBButtonJumps: @YES,
     GVKeyAspect: @-1,
     GVKeySmoothMotion: @NO,
+    GVKeyMute: @NO,
   }];
   // The ambient glow was removed: drop its old saved settings.
   for (NSString *key in @[ @"gv.ambientGlow", @"gv.glowStrength", @"gv.glowSize" ]) [Defaults() removeObjectForKey:key];
@@ -61,6 +64,10 @@ static NSUserDefaults *Defaults(void) { return NSUserDefaults.standardUserDefaul
 + (BOOL)bButtonJumps { return [Defaults() boolForKey:GVKeyBButtonJumps]; }
 + (NSInteger)aspect { return [Defaults() integerForKey:GVKeyAspect]; }
 + (BOOL)smoothMotion { return [Defaults() boolForKey:GVKeySmoothMotion]; }
++ (BOOL)muted { return [Defaults() boolForKey:GVKeyMute]; }
+// The engine keeps this volume across its own pause (galaxypad_engine_pause restores it on resume),
+// so unmuting always brings back full volume.
++ (void)applyAudio { galaxypad_engine_set_volume(self.muted ? 0.0f : 1.0f); }
 + (BOOL)stereoSelected { return [[Defaults() stringForKey:GVKeyViewMode] isEqualToString:@"stereo"]; }
 + (float)stereoDepth {
   const double v = [Defaults() doubleForKey:GVKeyStereoDepth];

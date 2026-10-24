@@ -55,6 +55,7 @@ struct InGameOverlayView: View {
         TabView {
           Tab("Controls", systemImage: "gamecontroller") { ControlsTab() }
           Tab("Graphics", systemImage: "paintbrush") { GraphicsTab(inGame: true, onDisplayChange: onDisplayChange) }
+          Tab("Audio", systemImage: "speaker.wave.2") { AudioTab(inGame: true) }
           Tab("Saving", systemImage: "square.and.arrow.down") { SavingTab(onQuit: onQuit) }
         }
       }
@@ -162,6 +163,9 @@ struct LauncherView: View {
       }
       Tab("Graphics", systemImage: "paintbrush") {
         GraphicsTab()
+      }
+      Tab("Audio", systemImage: "speaker.wave.2") {
+        AudioTab()
       }
     }
   }
@@ -520,6 +524,26 @@ private struct ControlsTab: View {
 }
 
 // MARK: - Graphics
+
+private struct AudioTab: View {
+  /// Shown over the running game: the change is heard right away on resume.
+  var inGame = false
+  @AppStorage(GVKeyMute) private var mute = false
+
+  var body: some View {
+    NavigationStack {
+      Form {
+        Section {
+          Toggle("Mute", isOn: $mute)
+        } footer: {
+          Text("Silences all game audio, music and sound effects. Saved, and applies right away and at every start.")
+        }
+      }
+      .navigationTitle("Audio")
+      .onChange(of: mute) { _, _ in if inGame { GalaxyVisionSettings.applyAudio() } }
+    }
+  }
+}
 
 private struct GraphicsTab: View {
   /// Shown over the running game: aspect ratio applies right away.

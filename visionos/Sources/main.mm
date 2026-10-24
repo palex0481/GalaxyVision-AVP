@@ -339,6 +339,7 @@ static void GVHandOffToEngine(UIScene *scene, UISceneSession *session, UISceneCo
   sEngineSceneDelegate = [[app.class alloc] init];
   scene.delegate = sEngineSceneDelegate;
   [sEngineSceneDelegate scene:scene willConnectToSession:session options:options];
+  [GalaxyVisionSettings applyAudio];  // Mute setting, from the first sound
   [GalaxyVisionController.shared start];
   if ([scene isKindOfClass:UIWindowScene.class]) GVObserveGameScene((UIWindowScene *)scene);
   if (GalaxyVisionSettings.stereoSelected) GVStartStereo();

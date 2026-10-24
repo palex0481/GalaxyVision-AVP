@@ -20,7 +20,8 @@ extern NSString *const GVKeyTiltSteer;          // Bool, PS pads with motion: le
 extern NSString *const GVKeyTiltInvert;         // Bool
 extern NSString *const GVKeyBButtonJumps;       // Bool: Circle / N64 B jump (Switch style) instead of Wii B
 extern NSString *const GVKeyAspect;             // Int: -1 leave engine setting, 0 = 4:3, 1 = 16:9
-extern NSString *const GVKeySmoothMotion;       // Bool (only has an effect on >=110 Hz displays)
+extern NSString *const GVKeySmoothMotion;
+extern NSString *const GVKeyMute;               // Bool: silence all game audio (music and sound effects), default off       // Bool (only has an effect on >=110 Hz displays)
 
 @interface GalaxyVisionSettings : NSObject
 + (void)registerDefaults;
@@ -35,6 +36,10 @@ extern NSString *const GVKeySmoothMotion;       // Bool (only has an effect on >
 @property(class, readonly) BOOL bButtonJumps;
 @property(class, readonly) NSInteger aspect;
 @property(class, readonly) BOOL smoothMotion;
+@property(class, readonly) BOOL muted;
+// Sets the engine output volume from the Mute setting (0 muted, 1 otherwise). Safe before the
+// engine opens its audio device (the volume is kept and applied when it opens) and at any time after.
++ (void)applyAudio;
 @property(class, readonly) BOOL stereoSelected;      // view mode is the Stereoscopic window (beta)
 @property(class, readonly) float stereoDepth;
 @property(class, readonly) float stereoConvergence;
