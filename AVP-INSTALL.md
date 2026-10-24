@@ -56,6 +56,7 @@ git submodule update --init --recursive
 
 - The launcher's Controls tab lists every button. The left stick moves Mario and also steers Ray surfing and Star Ball rolling.
 - View modes: a flat window at 1440p, or a stereoscopic 3D window (beta, about 60 fps at 1080p per eye).
+- If you started in Stereoscopic mode, you can switch between 3D and 2D mid-game from the in-game options (Graphics tab).
 - In stereoscopic mode the in-game home menu and some overlays are hidden.
 - PS VR2 Sense controller support is untested.
 - This is a hobby project and isn't in active development.
