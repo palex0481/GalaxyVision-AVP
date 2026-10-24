@@ -525,7 +525,6 @@ private struct GraphicsTab: View {
   /// Shown over the running game: aspect ratio applies right away.
   var inGame = false
   var onDisplayChange: (() -> Void)? = nil
-  @AppStorage(GVKeyRenderScale) private var renderScale = 0.0
   @AppStorage(GVKeyAspect) private var aspect = -1
   @AppStorage(GVKeyViewMode) private var viewMode = "flat"
   @AppStorage(GVKeyShowFPS) private var showFPS = true
@@ -533,17 +532,6 @@ private struct GraphicsTab: View {
   var body: some View {
     NavigationStack {
       Form {
-        Section {
-          Picker("Supersampling", selection: $renderScale) {
-            Text("Off (native, default)").tag(0.0)
-            Text("3x game size (near native)").tag(3.0)
-            Text("2x game size (lower, faster)").tag(2.0)
-          }
-        } header: {
-          Text("Supersampling")
-        } footer: {
-          Text("Off draws at the headset window's native 2560x1440 and is the sharpest. 3x renders at about 2432x1368 (just under native) and 2x at about 1625x1216, which is softer but lighter. Nothing above native is offered because it breaks the picture's size and aspect. Applies on the next start.")
-        }
         Section {
           Picker("Aspect ratio", selection: $aspect) {
             Text("Engine default").tag(-1)

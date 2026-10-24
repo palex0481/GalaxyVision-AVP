@@ -17,7 +17,6 @@ NSString *const GVKeyGyroInvertY = @"gv.gyroInvertY";
 NSString *const GVKeyTiltSteer = @"gv.tiltSteer";
 NSString *const GVKeyTiltInvert = @"gv.tiltInvert";
 NSString *const GVKeyBButtonJumps = @"gv.bButtonJumps";
-NSString *const GVKeyRenderScale = @"gv.supersampling";
 NSString *const GVKeyAspect = @"gv.aspect";
 NSString *const GVKeySmoothMotion = @"gv.smoothMotion";
 
@@ -39,7 +38,6 @@ static NSUserDefaults *Defaults(void) { return NSUserDefaults.standardUserDefaul
     GVKeyGyroInvertX: @NO,
     GVKeyGyroInvertY: @NO,
     GVKeyBButtonJumps: @YES,
-    GVKeyRenderScale: @0.0,
     GVKeyAspect: @-1,
     GVKeySmoothMotion: @NO,
   }];
@@ -61,13 +59,6 @@ static NSUserDefaults *Defaults(void) { return NSUserDefaults.standardUserDefaul
 + (BOOL)tiltSteer { return [Defaults() boolForKey:GVKeyTiltSteer]; }
 + (BOOL)tiltInvert { return [Defaults() boolForKey:GVKeyTiltInvert]; }
 + (BOOL)bButtonJumps { return [Defaults() boolForKey:GVKeyBButtonJumps]; }
-// Only 2x and 3x of the game's framebuffer (640x456; both at or below the 2560x1440 headset window) are
-// offered. Anything above (the old 4x option) exceeds the window's drawable and broke the aspect ratio,
-// so it is never honoured: it means native.
-+ (double)renderScale {
-  const double v = [Defaults() doubleForKey:GVKeyRenderScale];
-  return (v >= 1.0 && v <= 3.0) ? v : 0.0;
-}
 + (NSInteger)aspect { return [Defaults() integerForKey:GVKeyAspect]; }
 + (BOOL)smoothMotion { return [Defaults() boolForKey:GVKeySmoothMotion]; }
 + (BOOL)stereoSelected { return [[Defaults() stringForKey:GVKeyViewMode] isEqualToString:@"stereo"]; }
@@ -100,18 +91,8 @@ static void RedirectTraceLog(void) {
 + (void)applyStartupEnvironment {
   // The shell keeps the phone touch controls off (TARGET_OS_IPHONE is true on visionOS).
   setenv("PETARI_TOUCH_CONTROLS", "0", 1);
-  // Supersampling: the engine renders at N x the game's framebuffer when PETARI_RENDER_SCALE
-  // is set (VISetFrameBufferScale). Unset keeps the engine's own choice (screen pixels).
-  const double scale = self.renderScale;
-  if (scale >= 1.0 && scale <= 3.0) {
-    char text[32];
-    snprintf(text, sizeof text, "%.2f", scale);
-    setenv("PETARI_RENDER_SCALE", text, 1);
-    // Diagnostics for a non-default scale: the engine's size trace (surface / EFB / XFB / viewport).
-    RedirectTraceLog();
-  } else {
-    unsetenv("PETARI_RENDER_SCALE");
-  }
+  // The flat window always renders at the window's native size (Supersampling removed).
+  unsetenv("PETARI_RENDER_SCALE");
   if (self.stereoSelected) {
     // Stereoscopic window (beta): the stereo bridge reports to the same trace log. The engine picks the
     // render scale (3x, 1920x1080 for 16:9) when stereo starts; the launcher does not set one for it.

@@ -19,7 +19,6 @@ extern NSString *const GVKeyGyroInvertY;        // Bool
 extern NSString *const GVKeyTiltSteer;          // Bool, PS pads with motion: lean the pad to steer Ray surfing (default on)
 extern NSString *const GVKeyTiltInvert;         // Bool
 extern NSString *const GVKeyBButtonJumps;       // Bool: Circle / N64 B jump (Switch style) instead of Wii B
-extern NSString *const GVKeyRenderScale;        // Double: 0 = Off / native (engine default), else PETARI_RENDER_SCALE 2 or 3 (at or below native)
 extern NSString *const GVKeyAspect;             // Int: -1 leave engine setting, 0 = 4:3, 1 = 16:9
 extern NSString *const GVKeySmoothMotion;       // Bool (only has an effect on >=110 Hz displays)
 
@@ -34,7 +33,6 @@ extern NSString *const GVKeySmoothMotion;       // Bool (only has an effect on >
 @property(class, readonly) BOOL tiltSteer;
 @property(class, readonly) BOOL tiltInvert;
 @property(class, readonly) BOOL bButtonJumps;
-@property(class, readonly) double renderScale;
 @property(class, readonly) NSInteger aspect;
 @property(class, readonly) BOOL smoothMotion;
 @property(class, readonly) BOOL stereoSelected;      // view mode is the Stereoscopic window (beta)
