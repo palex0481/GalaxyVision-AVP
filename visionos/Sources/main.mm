@@ -385,6 +385,7 @@ int main(int argc, char *argv[]) {
       // TARGET_OS_IPHONE is true on visionOS, so the engine would draw its phone touch controls.
       // (Also re-set in applyStartupEnvironment, together with the launcher's graphics options.)
       setenv("PETARI_TOUCH_CONTROLS", "0", 1);
+      setenv("SDL_AUDIO_CATEGORY", "ambient", 1);  // mix with other apps, don't duck (see applyStartupEnvironment)
       NSArray<NSString *> *args = @[ @"GalaxyVision", @"--disc", game.path, @"--user", user.path ];
       char **engineArgv = (char **)calloc(args.count + 1, sizeof(char *));
       for (NSUInteger i = 0; i < args.count; ++i) engineArgv[i] = strdup(args[i].fileSystemRepresentation);

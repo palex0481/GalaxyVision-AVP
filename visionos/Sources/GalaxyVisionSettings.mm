@@ -98,6 +98,11 @@ static void RedirectTraceLog(void) {
 + (void)applyStartupEnvironment {
   // The shell keeps the phone touch controls off (TARGET_OS_IPHONE is true on visionOS).
   setenv("PETARI_TOUCH_CONTROLS", "0", 1);
+  // Mix with other apps' audio instead of ducking it. SDL's default session is Playback with
+  // MixWithOthers + DuckOthers, which turns other apps' video down while the game runs (even muted);
+  // its "ambient" category hint is Ambient + MixWithOthers, no ducking. SDL still activates the
+  // session and handles interruptions as before.
+  setenv("SDL_AUDIO_CATEGORY", "ambient", 1);
   // The flat window always renders at the window's native size (Supersampling removed).
   unsetenv("PETARI_RENDER_SCALE");
   if (self.stereoSelected) {
