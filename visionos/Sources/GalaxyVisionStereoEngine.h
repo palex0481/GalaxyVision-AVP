@@ -25,6 +25,9 @@ NS_ASSUME_NONNULL_BEGIN
 @property(class) BOOL sharpActive;
 // Turns the per-eye rendering on or off and sets the tuning (also live, from the options screen).
 + (void)applyEnabled:(BOOL)enabled depth:(float)depth convergence:(float)convergence;
+// Session-only 2D switch (in-game options): while set, the engine draws the flat window only (no second eye) and
+// the stereo screen is hidden. Not saved; a game started in the Stereoscopic window always starts in 3D.
+@property(class) BOOL flatOverride;
 // Applies the saved depth / convergence settings; on only if the bridge is ready.
 + (void)applySavedSettings;
 @end

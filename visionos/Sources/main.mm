@@ -76,8 +76,9 @@ static void GVHideOverlay(void) {
   [sOverlayContent removeFromParentViewController];
   sOverlayContent = nil;
   // The stereo screen is a 3D RealityKit view; it is hidden while the options are up (the paused game's flat
-  // picture shows behind them) so the 2D options can never end up behind the 3D plane.
-  sStereoContent.view.hidden = NO;
+  // picture shows behind them) so the 2D options can never end up behind the 3D plane. It stays hidden if the
+  // player switched to 2D in the options (the engine then draws the flat window only).
+  sStereoContent.view.hidden = GVStereoEngine.flatOverride;
   galaxypad_engine_pause(0);
   GalaxyVisionController.shared.inputSuspended = NO;
 }
@@ -246,7 +247,8 @@ static void GVFPSTick(void) {
     sFPSLabel.font = [UIFont monospacedDigitSystemFontOfSize:18 weight:UIFontWeightSemibold];
     sFPSLabel.autoresizingMask = UIViewAutoresizingFlexibleLeftMargin | UIViewAutoresizingFlexibleBottomMargin;
   }
-  const BOOL stereo = GalaxyVisionSettings.stereoSelected && sStereoContent && GVStereoEngine.status == 1;
+  const BOOL stereo = GalaxyVisionSettings.stereoSelected && !GVStereoEngine.flatOverride && sStereoContent &&
+                      GVStereoEngine.status == 1;
   const uint64_t count = GVFPSCount(stereo);
   const CFTimeInterval now = CACurrentMediaTime();
   if (sFPSLabel.superview != parent) [parent addSubview:sFPSLabel];  // (an open overlay was added later, so stays above)

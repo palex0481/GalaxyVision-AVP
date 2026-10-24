@@ -16,9 +16,12 @@ int galaxypad_engine_stereo_latest(int eye, uint64_t *sequence);
 }
 
 static BOOL sSharpFailed;
+static BOOL sFlatOverride;
 static BOOL sSharpActive;
 
 @implementation GVStereoEngine
++ (BOOL)flatOverride { return sFlatOverride; }
++ (void)setFlatOverride:(BOOL)value { sFlatOverride = value; }
 + (BOOL)sharpFailed { return sSharpFailed; }
 + (void)setSharpFailed:(BOOL)value { sSharpFailed = value; }
 + (BOOL)sharpActive { return sSharpActive; }
@@ -50,7 +53,7 @@ static BOOL sSharpActive;
   // otherwise it scales the picture across the whole eye image itself (the plain path).
   const BOOL sharp = GalaxyVisionSettings.stereoSharp && !sSharpFailed && height < 1080;
   galaxypad_engine_stereo_set_rect(sharp ? (int)height : 0);
-  [self applyEnabled:(self.status == 1 && GalaxyVisionSettings.stereoSelected)
+  [self applyEnabled:(self.status == 1 && GalaxyVisionSettings.stereoSelected && !sFlatOverride)
                depth:GalaxyVisionSettings.stereoDepth
          convergence:GalaxyVisionSettings.stereoConvergence];
 }
