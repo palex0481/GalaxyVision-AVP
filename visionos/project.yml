@@ -22,6 +22,10 @@ targets:
       - path: Resources/NativeStereoPlaceholder.png
       - path: Resources/Stereo-Apple-LICENSE.txt
     preBuildScripts:
+      - name: Build Dolphin DiscIO subset (disc image import)
+        basedOnDependencyAnalysis: false
+        script: |
+          "$SRCROOT/../scripts/build-visionos-discio.sh"
       - name: Package engine framework (strip Licenses, fix Info.plist)
         basedOnDependencyAnalysis: false
         script: |
@@ -65,6 +69,7 @@ targets:
         ENABLE_USER_SCRIPT_SANDBOXING: NO
         ENGINE_BUILD_DIR: $(SRCROOT)/../generated/build/visionos-device-engine/native/app
         FRAMEWORK_SEARCH_PATHS: $(ENGINE_BUILD_DIR)
+        OTHER_LDFLAGS: "$(inherited) $(SRCROOT)/../generated/build/visionos-device-discio/libgvdiscio.a -liconv -lz"
         LD_RUNPATH_SEARCH_PATHS: "$(inherited) @executable_path/Frameworks"
     dependencies:
       - framework: ../generated/build/visionos-device-engine/native/app/GalaxyPadEngine.framework

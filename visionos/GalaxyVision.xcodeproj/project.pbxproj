@@ -159,6 +159,7 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 4DD9092A675646DF6AFBDBED /* Build configuration list for PBXNativeTarget "GalaxyVision" */;
 			buildPhases = (
+				9E400CB880CBB635D7411856 /* Build Dolphin DiscIO subset (disc image import) */,
 				ADFD9ECB5C416005010757D3 /* Package engine framework (strip Licenses, fix Info.plist) */,
 				5E57A39EF599A9AB8EE692B8 /* Sources */,
 				7C7DD8D68204604D0DBE2FBE /* Resources */,
@@ -225,6 +226,25 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXShellScriptBuildPhase section */
+		9E400CB880CBB635D7411856 /* Build Dolphin DiscIO subset (disc image import) */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "Build Dolphin DiscIO subset (disc image import)";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"$SRCROOT/../scripts/build-visionos-discio.sh\"\n";
+		};
 		ADFD9ECB5C416005010757D3 /* Package engine framework (strip Licenses, fix Info.plist) */ = {
 			isa = PBXShellScriptBuildPhase;
 			alwaysOutOfDate = 1;
@@ -281,6 +301,7 @@
 				INFOPLIST_FILE = Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
 				MARKETING_VERSION = 0.1;
+				OTHER_LDFLAGS = "$(inherited) $(SRCROOT)/../generated/build/visionos-device-discio/libgvdiscio.a -liconv -lz";
 				PRODUCT_BUNDLE_IDENTIFIER = com.example.galaxyvision;
 				SDKROOT = xros;
 				SWIFT_OBJC_BRIDGING_HEADER = "Sources/GalaxyVision-Bridging-Header.h";
@@ -371,6 +392,7 @@
 				INFOPLIST_FILE = Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
 				MARKETING_VERSION = 0.1;
+				OTHER_LDFLAGS = "$(inherited) $(SRCROOT)/../generated/build/visionos-device-discio/libgvdiscio.a -liconv -lz";
 				PRODUCT_BUNDLE_IDENTIFIER = com.example.galaxyvision;
 				SDKROOT = xros;
 				SWIFT_OBJC_BRIDGING_HEADER = "Sources/GalaxyVision-Bridging-Header.h";

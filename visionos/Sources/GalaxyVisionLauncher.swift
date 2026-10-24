@@ -209,7 +209,7 @@ private struct PlayTab: View {
         } else {
           Label("No game data found", systemImage: "exclamationmark.triangle.fill")
             .foregroundStyle(.orange)
-          Text("Put your Super Mario Galaxy (RMGE01) game data in Files on this device, then press Import and pick it: either an extracted folder containing sys/ and files/, or a decrypted .iso.")
+          Text("Put your Super Mario Galaxy (RMGE01) game data in Files on this device, then press Import and pick it: a disc image (.iso from CleanRip, decrypted .iso, or .wbfs), or an extracted folder containing sys/ and files/.")
             .font(.callout).multilineTextAlignment(.center)
           if importing {
             if let importProgress {
@@ -319,7 +319,7 @@ enum GVGameImporter {
     do {
       try fm.createDirectory(at: parent, withIntermediateDirectories: true)
       if fm.fileExists(atPath: staging.path) { try fm.removeItem(at: staging) }
-      try GVISOExtractor.extract(iso: iso, to: staging, progress: progress)
+      try extractDisc(iso, to: staging, progress: progress)
       guard isGameRoot(staging) else { throw GVImportError(message: "The extraction didn't produce sys/main.dol and files/. Nothing was changed.") }
       try install(staging)
       return .success(())
@@ -332,17 +332,35 @@ enum GVGameImporter {
     }
   }
 
+  /// Dolphin DiscIO first (normal encrypted CleanRip ISOs, decrypted ISOs, WBFS); if DiscIO
+  /// can't open the file as a Wii disc, fall back to the built-in decrypted-ISO reader.
+  private static func extractDisc(_ iso: URL, to staging: URL, progress: @escaping (Double) -> Void) throws {
+    final class Box { let f: (Double) -> Void; init(_ f: @escaping (Double) -> Void) { self.f = f } }
+    if GVDiscIOCanOpen(iso.path) != 0 {
+      let box = Unmanaged.passRetained(Box(progress))
+      defer { box.release() }
+      var err = [CChar](repeating: 0, count: 256)
+      let rc = GVDiscIOExtract(iso.path, staging.path, { ctx, f in
+        Unmanaged<Box>.fromOpaque(ctx!).takeUnretainedValue().f(f)
+      }, nil, box.toOpaque(), &err, err.count)
+      if rc == 0 { return }
+      try? FileManager.default.removeItem(at: staging)
+      throw GVImportError(message: "\(String(cString: err)) Your previous game data (if any) was kept.")
+    }
+    try GVISOExtractor.extract(iso: iso, to: staging, progress: progress)
+  }
+
   static func importGame(from picked: URL, progress: @escaping (Double) -> Void) -> Result<Void, GVImportError> {
     let scoped = picked.startAccessingSecurityScopedResource()
     defer { if scoped { picked.stopAccessingSecurityScopedResource() } }
     let ext = picked.pathExtension.lowercased()
-    if ext == "iso" { return importISO(picked, progress: progress) }
-    if ["wbfs", "rvz", "gcz", "wia", "ciso", "nkit"].contains(ext) {
-      return .failure(GVImportError(message: ".\(ext) files aren't supported. Use a decrypted .iso, or extract the disc to a folder with sys/ and files/ (for example with Dolphin: right-click the game > Properties > Filesystem > Extract Entire Disc), then pick that."))
+    if ext == "iso" || ext == "wbfs" { return importISO(picked, progress: progress) }
+    if ["rvz", "gcz", "wia", "ciso", "nkit"].contains(ext) {
+      return .failure(GVImportError(message: ".\(ext) files aren't supported. Use a CleanRip .iso or a .wbfs, or extract the disc to a folder with sys/ and files/ (for example with Dolphin: right-click the game > Properties > Filesystem > Extract Entire Disc), then pick that."))
     }
     var isDir: ObjCBool = false
     guard FileManager.default.fileExists(atPath: picked.path, isDirectory: &isDir), isDir.boolValue else {
-      return .failure(GVImportError(message: "That file isn't supported. Pick a decrypted .iso, or the extracted game folder that contains sys/ and files/."))
+      return .failure(GVImportError(message: "That file isn't supported. Pick a .iso or .wbfs disc image, or the extracted game folder that contains sys/ and files/."))
     }
     guard let root = findGameRoot(in: picked) else {
       return .failure(GVImportError(message: "That folder doesn't look like extracted game data. It needs sys/main.dol and a files/ folder (or a RMGE01 or DATA folder that has them)."))
