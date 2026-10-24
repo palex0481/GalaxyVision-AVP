@@ -4,5 +4,5 @@
 	branch = codex/galaxypad-integration
 [submodule "ref/galaxypad-engine"]
 	path = ref/galaxypad-engine
-	url = https://github.com/chrissotraidis/galaxypad-engine.git
-	branch = main
+	url = https://github.com/palex0481/galaxypad-engine.git
+	branch = visionos-port
