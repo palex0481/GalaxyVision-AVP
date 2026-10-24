@@ -9,9 +9,6 @@ NSString *const GVKeyStereoConvergence = @"gv.stereoConvergence";
 NSString *const GVKeyStereoSharp = @"gv.stereoSharp";
 NSString *const GVKeyStereoResolution = @"gv.stereoResolution";
 NSString *const GVKeyShowFPS = @"gv.showFPS";
-NSString *const GVKeyAmbientGlow = @"gv.ambientGlow";
-NSString *const GVKeyGlowStrength = @"gv.glowStrength";
-NSString *const GVKeyGlowSize = @"gv.glowSize";
 NSString *const GVKeyPointerSensitivity = @"gv.pointerSensitivity";
 NSString *const GVKeyPointerMode = @"gv.pointerMode";
 NSString *const GVKeyGyroAim = @"gv.gyroAim";
@@ -36,9 +33,6 @@ static NSUserDefaults *Defaults(void) { return NSUserDefaults.standardUserDefaul
     GVKeyStereoSharp: @YES,
     GVKeyShowFPS: @YES,
     GVKeyTiltSteer: @YES,
-    GVKeyAmbientGlow: @NO,
-    GVKeyGlowStrength: @0.7,
-    GVKeyGlowSize: @0.5,
     GVKeyPointerSensitivity: @1.0,
     GVKeyPointerMode: @0,
     GVKeyGyroAim: @NO,
@@ -49,18 +43,11 @@ static NSUserDefaults *Defaults(void) { return NSUserDefaults.standardUserDefaul
     GVKeyAspect: @-1,
     GVKeySmoothMotion: @NO,
   }];
+  // The ambient glow was removed: drop its old saved settings.
+  for (NSString *key in @[ @"gv.ambientGlow", @"gv.glowStrength", @"gv.glowSize" ]) [Defaults() removeObjectForKey:key];
   // The Immersive space and 3D portal window modes were removed: a saved choice of either means Flat now.
   NSString *mode = [Defaults() stringForKey:GVKeyViewMode];
   if (![mode isEqualToString:@"flat"] && ![mode isEqualToString:@"stereo"]) [Defaults() setObject:@"flat" forKey:GVKeyViewMode];
-}
-+ (BOOL)ambientGlow { return [Defaults() boolForKey:GVKeyAmbientGlow]; }
-+ (float)glowStrength {
-  const double v = [Defaults() doubleForKey:GVKeyGlowStrength];
-  return (v >= 0.1 && v <= 1.0) ? (float)v : 0.7f;
-}
-+ (float)glowSize {
-  const double v = [Defaults() doubleForKey:GVKeyGlowSize];
-  return (v >= 0.0 && v <= 1.0) ? (float)v : 0.5f;
 }
 + (BOOL)showFPS { return [Defaults() boolForKey:GVKeyShowFPS]; }
 + (float)pointerSensitivity {

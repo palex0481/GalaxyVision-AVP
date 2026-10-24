@@ -149,24 +149,14 @@ inside the draw stream, so a replay has to patch matrices in the FIFO; too risky
 Expected gain of the shipped changes is an estimate only (about 23 ms -> 13-17 ms per step); read the new log lines after
 a stereo session to verify. 60 fps at 1080p per eye is unproven.
 
-## Ambient glow (flat window)
+## Ambient glow: removed
 
-A switch in the launcher's View tab (flat mode) and the in-game Graphics tab: **Ambient glow** (default off), with
-**Glow strength** and **Glow size** sliders shown while it is on. Settings keys `gv.ambientGlow`, `gv.glowStrength`
-(0.1-1, default 0.7), `gv.glowSize` (0-1, default 0.5). The app reads them every 50 ms, so they apply live.
-
-- **Layout constraint.** A visionOS window can't draw outside its bounds, so the glow lives in a border inside the window:
-  while on, the engine's Metal view is scaled down about its centre (view transform only; the drawable, aspect and
-  window size are untouched) by 1 - 2f, f = 3%..12% per side (Glow size). The glow is a black UIView with four
-  gradient strips inserted directly below the Metal view in the SDL window's root view (not a UIWindow, so no glass
-  material). Off: nothing is inserted, the transform is the identity, the layout is the old one. Stereo mode: no glow.
-- **Colours.** `present_aurora.cpp` (render worker): while enabled, about 20x/s a tiny compute pass averages 16 cells per
-  edge (a band 7% deep, 8x6 taps each) of the presented XFB into 64 RGB values, copies the 256 bytes to a small buffer
-  and maps it asynchronously (no wait, no full-frame readback). Disabled: no work at all. Exports
-  `galaxypad_engine_glow_enable` / `galaxypad_engine_glow_colors`. The app smooths them (about 0.15 s) and fades to
-  black when no new sample arrives for 0.7 s (VI black).
-- Pointer note: with the picture scaled, window-pointer (not controller) positions are off by the scale while the glow is on.
-- Unverified on device.
+Pat never got the glow to show, so it is gone completely. Removed: the "Ambient glow" switch and the Glow strength /
+Glow size sliders (launcher View tab and in-game Graphics tab), the Flat-only hint, the settings keys `gv.ambientGlow`,
+`gv.glowStrength`, `gv.glowSize` (old saved values are deleted at start-up), the host's glow view, gradient strips,
+Metal-view scaling and trace lines in `main.mm`, and on the engine side the edge-colour compute pass in
+`present_aurora.cpp` and its exports `galaxypad_engine_glow_enable` / `galaxypad_engine_glow_colors`. The flat window
+layout is the plain one (no scaling). The removal is a new commit on top; the old code is in git history.
 
 ## Immersive space and 3D portal window: removed
 
@@ -178,7 +168,7 @@ settings keys, the host's flat-picture hiding and window resizing, and on the en
 exports (`galaxypad_engine_portal_configure`, `galaxypad_engine_portal_set_eyes`) plus the "depth below 0.005 draws once"
 shortcut (it only existed for the Immersive space's "Screen depth off"; at the Stereoscopic depth slider's 0 both eyes are
 drawn again, which looks the same). A saved view mode of "immersive" or "portal" now falls back to Flat at start-up.
-Kept: Stereoscopic window behaviour, ambient glow (Flat only), glow trace lines and the Flat-only hint, FPS counter,
+Kept: Stereoscopic window behaviour, FPS counter,
 Ray surfing, no Smooth Motion toggle, the pause fix.
 
 To get the work back from git (nothing was rewritten; the removal is a new commit on top):
