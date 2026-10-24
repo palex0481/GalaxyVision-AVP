@@ -6,6 +6,7 @@
 // shows the SwiftUI launcher; Play then hands the scene to the engine's SDL3 scene delegate, whose
 // window is the flat virtual screen. Without game data the launcher shows the import placeholder
 // (import is not implemented yet).
+#import <QuartzCore/CAMetalLayer.h>
 #import <UIKit/UIKit.h>
 #import <UniformTypeIdentifiers/UniformTypeIdentifiers.h>
 #import "GalaxyVisionController.h"
@@ -69,6 +70,31 @@ static UIWindow *GVGameWindow(void) {
   return nil;
 }
 
+// The flat (SDL Metal) view must cover the whole game window. In a Stereoscopic session the flat view is
+// covered by the 3D screen and can stay at the window's size from before the window was resized, so after
+// switching to 2D it drew a small picture in the top-left corner. Lay the game window's views out against
+// the scene's current size again: SDL then reports the new pixel size and the engine resizes its frame buffer.
+static void GVSyncFlatViewToWindow(void) {
+  UIWindow *gameWindow = GVGameWindow();
+  if (!gameWindow) return;
+  const CGRect sceneBounds = gameWindow.windowScene.coordinateSpace.bounds;
+  if (!CGRectIsEmpty(sceneBounds) && !CGRectEqualToRect(gameWindow.frame, sceneBounds)) gameWindow.frame = sceneBounds;
+  UIView *root = gameWindow.rootViewController.view;
+  if (root && !CGRectEqualToRect(root.frame, gameWindow.bounds)) root.frame = gameWindow.bounds;
+  UIView *metal = nil;
+  for (UIView *v in [@[ root ?: gameWindow ] arrayByAddingObjectsFromArray:(root ?: gameWindow).subviews]) {
+    if ([v.layer isKindOfClass:CAMetalLayer.class]) { metal = v; break; }
+  }
+  if (metal && metal != root && !CGRectEqualToRect(metal.frame, metal.superview.bounds)) metal.frame = metal.superview.bounds;
+  [root setNeedsLayout];
+  [metal setNeedsLayout];
+  [gameWindow layoutIfNeeded];
+  const CGSize drawable = [metal.layer isKindOfClass:CAMetalLayer.class] ? ((CAMetalLayer *)metal.layer).drawableSize : CGSizeZero;
+  fprintf(stderr, "GalaxyVision flat view: scene %.0fx%.0f, window %.0fx%.0f, view %.0fx%.0f, drawable %.0fx%.0f\n",
+          sceneBounds.size.width, sceneBounds.size.height, gameWindow.bounds.size.width, gameWindow.bounds.size.height,
+          metal.bounds.size.width, metal.bounds.size.height, drawable.width, drawable.height);
+}
+
 static void GVHideOverlay(void) {
   if (!sOverlayContent) return;
   [sOverlayContent willMoveToParentViewController:nil];
@@ -79,6 +105,13 @@ static void GVHideOverlay(void) {
   // picture shows behind them) so the 2D options can never end up behind the 3D plane. It stays hidden if the
   // player switched to 2D in the options (the engine then draws the flat window only).
   sStereoContent.view.hidden = GVStereoEngine.flatOverride;
+  if (GVStereoEngine.flatOverride) {
+    GVSyncFlatViewToWindow();
+    // Once more after the engine has left stereo (it switches on its next step).
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.25 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+      if (GVStereoEngine.flatOverride) GVSyncFlatViewToWindow();
+    });
+  }
   galaxypad_engine_pause(0);
   GalaxyVisionController.shared.inputSuspended = NO;
 }
