@@ -7,6 +7,16 @@ GalaxyVision is an Apple Vision Pro port of [GalaxyPad](https://github.com/chris
 - **Controllers**: PS5 DualSense, PS4 DualShock 4, Xbox controllers, the Nintendo Switch Online N64 pad, and PS VR2 Sense controllers (experimental, untested).
 - **Launcher**: pick the view mode, check the controls, and change graphics settings before you press Play.
 
+## New: antialiasing and 3D video recording
+
+**Antialiasing.** The launcher's Graphics tab has an Antialiasing setting: Off (default), FXAA, 2x MSAA or 4x MSAA. It works in both the Flat and Stereoscopic windows and takes effect the next time the game starts, so it's greyed out in the in-game options. FXAA is a light smoothing filter over the finished picture. 2x and 4x MSAA smooth edges properly and cost more GPU, 4x the most. Lens flare keeps working with all of them.
+
+**Side-by-side 3D video recorder (Dev build only).** Stereoscopic 3D doesn't come across in a normal screen recording, so the Dev build variant (`visionos/Dev.xcconfig`) can record the Stereoscopic window as a side-by-side 3D video (3840×1080, left eye and right eye) tagged for YouTube 3D.
+- Start or stop it from the **Record** tab in the in-game options, or hold both stick clicks (L3 + R3) for one second.
+- The launcher's **View** tab has a switch to start recording automatically when the Stereoscopic window opens.
+- A red REC badge shows on the window while recording, but isn't in the video.
+- Videos are saved to Files > On My Apple Vision Pro > GalaxyVision Dev.
+
 ## Status: hobby project, not in active development
 
 This is a hobby project. I am not actively developing it and I can't promise fixes, support or replies to issues. You are welcome to take the source and make your own changes. It is licensed GPL-3.0 (see `LICENSE`), so if you share a modified version you must share your source under the same license. Please keep the credit for the people whose work this stands on (see Credits below).
