@@ -5,9 +5,7 @@
 #import <GameController/GameController.h>
 #import <QuartzCore/QuartzCore.h>
 #import <UIKit/UIKit.h>
-#if GV_DEV
 #import "GalaxyVision-Swift.h"  // GVSBSRecorder
-#endif
 #include <algorithm>
 #include <cmath>
 
@@ -89,7 +87,7 @@ static const float kStickPointerSpeed = 1.2f;  // viewport widths per second at 
   BOOL _r1Held;
   CFTimeInterval _comboStart;
   BOOL _comboFired;
-  CFTimeInterval _recordComboStart;  // GV_DEV: L3 + R3 held 1 s toggles the 3D recorder
+  CFTimeInterval _recordComboStart;  // L3 + R3 held 1 s toggles the 3D recorder
   BOOL _recordComboFired;
   BOOL _suspended;
 }
@@ -278,7 +276,6 @@ static const float kStickPointerSpeed = 1.2f;  // viewport widths per second at 
     _nudgeDirX = _nudgeDirY = 0;
   }
   if (recenterNow) [self recenter];
-#if GV_DEV
   // Side-by-side 3D recorder: hold L3 + R3 (both stick clicks) for 1 s to start / stop (PS / Xbox pads, Sense).
   BOOL recordCombo = NO;
   if (pad && !n64) recordCombo = pad.leftThumbstickButton.pressed && pad.rightThumbstickButton.pressed;
@@ -293,7 +290,6 @@ static const float kStickPointerSpeed = 1.2f;  // viewport widths per second at 
     _recordComboStart = 0;
     _recordComboFired = NO;
   }
-#endif
 
   // Options overlay shortcut.
   // Only while the game's own pause menu is up (galaxypad_engine_game_paused), like SM64-Vision.

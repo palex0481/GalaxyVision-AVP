@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// GalaxyVision Dev: game audio tap (see GVAudioTap.h).
+// game audio tap (see GVAudioTap.h).
 //
 // The engine framework exports no SDL audio API, so the recorder gets the game's sound by rebinding the framework's
 // non-lazy symbol pointers (__got, the same technique as fishhook) for two AudioToolbox calls:

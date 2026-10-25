@@ -403,9 +403,7 @@ int main(int argc, char *argv[]) {
       NSArray<NSString *> *args = @[ @"GalaxyVision", @"--disc", game.path, @"--user", user.path ];
       char **engineArgv = (char **)calloc(args.count + 1, sizeof(char *));
       for (NSUInteger i = 0; i < args.count; ++i) engineArgv[i] = strdup(args[i].fileSystemRepresentation);
-#if GV_DEV
       [GVAudioTap install];  // game audio for the side-by-side 3D recorder (before the engine opens its AudioQueue)
-#endif
       return galaxypad_engine_main((int)args.count, engineArgv);
     }
     return UIApplicationMain(argc, argv, nil, NSStringFromClass(GalaxyVisionAppDelegate.class));

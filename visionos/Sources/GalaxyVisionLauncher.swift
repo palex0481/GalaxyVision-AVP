@@ -57,9 +57,7 @@ struct InGameOverlayView: View {
           Tab("Graphics", systemImage: "paintbrush") { GraphicsTab(inGame: true, onDisplayChange: onDisplayChange) }
           Tab("Audio", systemImage: "speaker.wave.2") { AudioTab(inGame: true) }
           Tab("Saving", systemImage: "square.and.arrow.down") { SavingTab(onQuit: onQuit) }
-          #if GV_DEV
           Tab("Record", systemImage: "record.circle") { RecordTab(inGame: true) }
-          #endif
         }
       }
       .frame(maxWidth: 900, maxHeight: 640)
@@ -437,9 +435,7 @@ private struct ViewModeTab: View {
         if viewMode == "stereo" {
           StereoSettingsSection(inGame: false)
         }
-        #if GV_DEV
         RecordSection(inGame: false)
-        #endif
       }
       .navigationTitle("View")
     }
@@ -786,10 +782,9 @@ enum GVISOExtractor {
   }
 }
 
-#if GV_DEV
-// MARK: - 3D video recorder (Dev)
+// MARK: - 3D video recorder
 
-/// Side-by-side 3D recorder controls (GalaxyVision Dev): in-game Record tab and the launcher's View tab.
+/// Side-by-side 3D recorder controls (GalaxyVision): in-game Record tab and the launcher's View tab.
 struct RecordSection: View {
   var inGame: Bool
   @AppStorage("gv.sbsRecordAutoStart") private var autoStart = false
@@ -809,9 +804,9 @@ struct RecordSection: View {
       }
       Toggle("Start recording when the Stereoscopic window opens", isOn: $autoStart)
     } header: {
-      Text("3D video recorder (Dev)")
+      Text("3D video recorder")
     } footer: {
-      Text("Saves a side-by-side 3D video (3840\u{00D7}1080, left eye on the left, H.264 + game audio, tagged for YouTube 3D) to Files \u{203A} On My Apple Vision Pro \u{203A} GalaxyVision Dev. Works in the Stereoscopic window in 3D only. Start or stop: this switch (in-game options), or hold L3 + R3 (both stick clicks) for 1 second. A red REC badge shows on the window (not in the video).")
+      Text("Saves a side-by-side 3D video (3840\u{00D7}1080, left eye on the left, H.264 + game audio, tagged for YouTube 3D) to Files \u{203A} On My Apple Vision Pro \u{203A} GalaxyVision. Works in the Stereoscopic window in 3D only. Start or stop: this switch (in-game options), or hold L3 + R3 (both stick clicks) for 1 second. A red REC badge shows on the window (not in the video).")
     }
     .onReceive(NotificationCenter.default.publisher(for: GVSBSRecorder.stateChanged)) { _ in
       recording = GVSBSRecorder.shared.isRecording
@@ -829,4 +824,3 @@ private struct RecordTab: View {
     }
   }
 }
-#endif

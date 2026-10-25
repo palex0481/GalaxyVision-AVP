@@ -33,7 +33,7 @@ targets:
     info:
       path: Info.plist
       properties:
-        CFBundleDisplayName: "$(GV_DISPLAY_NAME:default=GalaxyVision)"
+        CFBundleDisplayName: GalaxyVision
         CFBundleName: GalaxyVision
         CFBundleDevelopmentRegion: en
         CFBundleShortVersionString: "0.1"

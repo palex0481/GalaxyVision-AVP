@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// GalaxyVision Dev: side-by-side 3D video recorder (Stereoscopic window only).
+// side-by-side 3D video recorder (Stereoscopic window only).
 //
 // Each eye pair the stereo window shows is also blitted (GPU, same command buffer as the window's copy) into a
 // 3840x1080 BGRA pixel buffer, left eye on the left, and appended to an AVAssetWriter (H.264 MP4) on a background
 // queue together with the game's audio (GVAudioTap, AAC). The file goes to Documents (Files > On My Apple Vision Pro >
-// GalaxyVision Dev). After writing, a Spherical Video V2 `st3d` box (stereo mode left-right) is added to the video
+// GalaxyVision). After writing, a Spherical Video V2 `st3d` box (stereo mode left-right) is added to the video
 // sample entry, so YouTube treats the upload as 3D side-by-side.
 import AVFoundation
 import CoreMedia

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// GalaxyVision Dev: game audio tap for the side-by-side 3D recorder.
+// game audio tap for the side-by-side 3D recorder.
 #import <Foundation/Foundation.h>
 #import <AudioToolbox/AudioToolbox.h>
 

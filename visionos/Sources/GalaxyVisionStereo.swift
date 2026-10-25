@@ -165,11 +165,9 @@ final class GVStereoRenderer: NSObject, ObservableObject {
     link.preferredFrameRateRange = CAFrameRateRange(minimum: 30, maximum: 90, preferred: 60)
     link.add(to: .main, forMode: .common)
     displayLink = link
-    #if GV_DEV
     if UserDefaults.standard.bool(forKey: GVSBSRecorder.autoStartKey), !GVSBSRecorder.shared.isRecording {
       GVSBSRecorder.shared.start()
     }
-    #endif
   }
 
   func stop() {
@@ -245,7 +243,6 @@ final class GVStereoRenderer: NSObject, ObservableObject {
         blit.endEncoding()
       }
     }
-    #if GV_DEV
     // Side-by-side 3D recorder: the same pair, full size (MetalFX output when scaled, else the raw eye image).
     if GVSBSRecorder.shared.isRecording {
       if scaled, sharpOutputs.count == 2 {
@@ -254,7 +251,6 @@ final class GVStereoRenderer: NSObject, ObservableObject {
         GVSBSRecorder.shared.encodeFrame(commandBuffer: commandBuffer, left: rawEyes[0][slots[0]], right: rawEyes[1][slots[1]])
       }
     }
-    #endif
     if GVStereoEngine.sharpActive != scaled { GVStereoEngine.sharpActive = scaled }
     let timing = self.timing
     commandBuffer.addCompletedHandler { buffer in
@@ -313,9 +309,7 @@ struct GVStereoView: View {
       .background(.black)
     }
     .background(.black)
-    #if GV_DEV
     .overlay(alignment: .topLeading) { GVRecordBadge().padding(16) }
-    #endif
     .task {
       do {
         try await renderer.prepare()
@@ -345,7 +339,6 @@ final class GVStereoFactory: NSObject {
   }
 }
 
-#if GV_DEV
 /// Red "REC" badge on the window while the side-by-side recorder runs (not part of the recorded eye images).
 struct GVRecordBadge: View {
   @State private var recording = GVSBSRecorder.shared.isRecording
@@ -361,4 +354,3 @@ struct GVRecordBadge: View {
     }
   }
 }
-#endif
