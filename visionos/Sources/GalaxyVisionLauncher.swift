@@ -552,7 +552,7 @@ private struct GraphicsTab: View {
   @AppStorage(GVKeyAspect) private var aspect = -1
   @AppStorage(GVKeyViewMode) private var viewMode = "flat"
   @AppStorage(GVKeyShowFPS) private var showFPS = true
-  @State private var flatNow = GVStereoEngine.flatOverride
+  @State private var flatNow = GVStereoEngine.flatOverride || !GVStereoEngine.sessionStereo
 
   var body: some View {
     NavigationStack {
@@ -573,7 +573,7 @@ private struct GraphicsTab: View {
         } footer: {
           Text("A small frame-rate number in the top-right corner of the game window. In the Stereoscopic window it also shows the eye resolution. Turns on and off right away.")
         }
-        if inGame && viewMode == "stereo" && GVStereoEngine.status == 1 {
+        if inGame {
           Section {
             Picker("View", selection: $flatNow) {
               Text("3D (Stereoscopic)").tag(false)
@@ -583,10 +583,12 @@ private struct GraphicsTab: View {
           } header: {
             Text("View")
           } footer: {
-            Text("Switches this game between the Stereoscopic window and the flat window when you resume, without restarting. 2D draws one picture at the window\u{2019}s native size, so it runs like the flat window. Not saved: the next start uses the View tab\u{2019}s choice.")
+            Text("Switches this game between the Stereoscopic window and the flat window when you resume, without restarting (from a flat start, 3D starts the Stereoscopic window, which can take a few seconds). 2D draws one picture at the window\u{2019}s native size, so it runs like the flat window. Not saved: the next start uses the View tab\u{2019}s choice.")
           }
           .onChange(of: flatNow) { _, value in
             GVStereoEngine.flatOverride = value
+            // A run without stereo yet (flat start, or stereo failed): start it when the options close.
+            if !value && !GVStereoEngine.sessionStereo { GVStereoEngine.requestStereoStart() }
             onDisplayChange?()
           }
           if !flatNow {

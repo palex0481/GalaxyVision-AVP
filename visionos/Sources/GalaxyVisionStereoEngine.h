@@ -28,6 +28,13 @@ NS_ASSUME_NONNULL_BEGIN
 // Session-only 2D switch (in-game options): while set, the engine draws the flat window only (no second eye) and
 // the stereo screen is hidden. Not saved; a game started in the Stereoscopic window always starts in 3D.
 @property(class) BOOL flatOverride;
+// This run uses the Stereoscopic window: started in it from the launcher, or 3D was picked mid-game from a flat
+// start. Set by main.mm when the stereo start-up begins, cleared if it fails.
+@property(class) BOOL sessionStereo;
+// In-game options, 3D picked while this run has no stereo yet: asks main.mm to start the Stereoscopic window when
+// the options close (the game is paused while they are up). takeStartRequest returns and clears the request.
++ (void)requestStereoStart;
++ (BOOL)takeStartRequest;
 // Applies the saved depth / convergence settings; on only if the bridge is ready.
 + (void)applySavedSettings;
 @end

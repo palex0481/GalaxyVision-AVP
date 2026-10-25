@@ -95,6 +95,8 @@ static void GVSyncFlatViewToWindow(void) {
           metal.bounds.size.width, metal.bounds.size.height, drawable.width, drawable.height);
 }
 
+static void GVStartStereo(void);
+
 static void GVHideOverlay(void) {
   if (!sOverlayContent) return;
   [sOverlayContent willMoveToParentViewController:nil];
@@ -105,6 +107,8 @@ static void GVHideOverlay(void) {
   // picture shows behind them) so the 2D options can never end up behind the 3D plane. It stays hidden if the
   // player switched to 2D in the options (the engine then draws the flat window only).
   sStereoContent.view.hidden = GVStereoEngine.flatOverride;
+  // 3D picked in the options during a run that started flat: start the Stereoscopic window now.
+  if ([GVStereoEngine takeStartRequest] && !GVStereoEngine.flatOverride && !GVStereoEngine.sessionStereo) GVStartStereo();
   if (GVStereoEngine.flatOverride) {
     GVSyncFlatViewToWindow();
     // Once more after the engine has left stereo (it switches on its next step).
@@ -193,6 +197,9 @@ static void GVStereoFailed(NSString *message) {
   sStereoTimer = nil;
   [GVStereoEngine applyEnabled:NO depth:1.0f convergence:1200.0f];
   [GVStereoEngine setBridgeOpen:NO];
+  // Back to the flat window for the rest of the run; the options' 3D/2D switch shows 2D and can try again.
+  GVStereoEngine.sessionStereo = NO;
+  GVStereoEngine.flatOverride = YES;
   if (sStereoContent) {
     [sStereoContent willMoveToParentViewController:nil];
     [sStereoContent.view removeFromSuperview];
@@ -213,11 +220,17 @@ static void GVInstallStereoView(void) {
   content.view.frame = parent.bounds;
   content.view.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
   [parent insertSubview:content.view atIndex:0];  // under any overlay or toast
+  content.view.hidden = (sOverlayContent != nil) || GVStereoEngine.flatOverride;  // as GVHideOverlay sets it
   if (host) [content didMoveToParentViewController:host];
   sStereoContent = content;
 }
 
+// Starts the Stereoscopic window: at launch when it was chosen in the View tab, or mid-game when 3D is picked in
+// the in-game options of a run that started flat. After this, the 3D/2D switch works the same either way.
 static void GVStartStereo(void) {
+  if (sStereoTimer || sStereoContent) return;
+  GVStereoEngine.sessionStereo = YES;
+  GVStereoEngine.flatOverride = NO;
   __block BOOL requested = NO;
   __block CFTimeInterval requestedAt = 0;
   sStereoTimer = [NSTimer scheduledTimerWithTimeInterval:0.25 repeats:YES block:^(NSTimer *timer) {
@@ -280,7 +293,7 @@ static void GVFPSTick(void) {
     sFPSLabel.font = [UIFont monospacedDigitSystemFontOfSize:18 weight:UIFontWeightSemibold];
     sFPSLabel.autoresizingMask = UIViewAutoresizingFlexibleLeftMargin | UIViewAutoresizingFlexibleBottomMargin;
   }
-  const BOOL stereo = GalaxyVisionSettings.stereoSelected && !GVStereoEngine.flatOverride && sStereoContent &&
+  const BOOL stereo = GVStereoEngine.sessionStereo && !GVStereoEngine.flatOverride && sStereoContent &&
                       GVStereoEngine.status == 1;
   const uint64_t count = GVFPSCount(stereo);
   const CFTimeInterval now = CACurrentMediaTime();
