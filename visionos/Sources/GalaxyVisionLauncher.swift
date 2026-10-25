@@ -57,6 +57,9 @@ struct InGameOverlayView: View {
           Tab("Graphics", systemImage: "paintbrush") { GraphicsTab(inGame: true, onDisplayChange: onDisplayChange) }
           Tab("Audio", systemImage: "speaker.wave.2") { AudioTab(inGame: true) }
           Tab("Saving", systemImage: "square.and.arrow.down") { SavingTab(onQuit: onQuit) }
+          #if GV_DEV
+          Tab("Record", systemImage: "record.circle") { RecordTab(inGame: true) }
+          #endif
         }
       }
       .frame(maxWidth: 900, maxHeight: 640)
@@ -434,6 +437,9 @@ private struct ViewModeTab: View {
         if viewMode == "stereo" {
           StereoSettingsSection(inGame: false)
         }
+        #if GV_DEV
+        RecordSection(inGame: false)
+        #endif
       }
       .navigationTitle("View")
     }
@@ -552,6 +558,7 @@ private struct GraphicsTab: View {
   @AppStorage(GVKeyAspect) private var aspect = -1
   @AppStorage(GVKeyViewMode) private var viewMode = "flat"
   @AppStorage(GVKeyShowFPS) private var showFPS = true
+  @AppStorage(GVKeyAntialiasing) private var antialiasing = 0
   @State private var flatNow = GVStereoEngine.flatOverride || !GVStereoEngine.sessionStereo
 
   var body: some View {
@@ -567,6 +574,19 @@ private struct GraphicsTab: View {
           Text("Display")
         } footer: {
           Text("Aspect ratio is saved by the game and may need one more start to fully apply.")
+        }
+        Section {
+          Picker("Antialiasing", selection: $antialiasing) {
+            Text("Off").tag(0)
+            Text("FXAA").tag(1)
+            Text("2x MSAA").tag(2)
+            Text("4x MSAA").tag(4)
+          }
+          .disabled(inGame)
+        } header: {
+          Text("Antialiasing")
+        } footer: {
+          Text(inGame ? "Change it in the launcher; it applies at the next start." : "Smooths jagged edges in Flat and Stereoscopic. FXAA is a light filter over the finished picture; 2x and 4x MSAA are sharper but cost more GPU. Applies at the next start.")
         }
         Section {
           Toggle("Show FPS counter (testing)", isOn: $showFPS)
@@ -765,3 +785,48 @@ enum GVISOExtractor {
     }
   }
 }
+
+#if GV_DEV
+// MARK: - 3D video recorder (Dev)
+
+/// Side-by-side 3D recorder controls (GalaxyVision Dev): in-game Record tab and the launcher's View tab.
+struct RecordSection: View {
+  var inGame: Bool
+  @AppStorage("gv.sbsRecordAutoStart") private var autoStart = false
+  @State private var recording = GVSBSRecorder.shared.isRecording
+  @State private var message = GVSBSRecorder.shared.statusMessage
+
+  var body: some View {
+    Section {
+      if inGame {
+        Toggle(isOn: Binding(get: { recording }, set: { on in
+          if on { GVSBSRecorder.shared.start() } else { GVSBSRecorder.shared.stop() }
+        })) {
+          Label("Record 3D video", systemImage: recording ? "record.circle.fill" : "record.circle")
+        }
+        .tint(.red)
+        Text(message).font(.caption).foregroundStyle(.secondary)
+      }
+      Toggle("Start recording when the Stereoscopic window opens", isOn: $autoStart)
+    } header: {
+      Text("3D video recorder (Dev)")
+    } footer: {
+      Text("Saves a side-by-side 3D video (3840\u{00D7}1080, left eye on the left, H.264 + game audio, tagged for YouTube 3D) to Files \u{203A} On My Apple Vision Pro \u{203A} GalaxyVision Dev. Works in the Stereoscopic window in 3D only. Start or stop: this switch (in-game options), or hold L3 + R3 (both stick clicks) for 1 second. A red REC badge shows on the window (not in the video).")
+    }
+    .onReceive(NotificationCenter.default.publisher(for: GVSBSRecorder.stateChanged)) { _ in
+      recording = GVSBSRecorder.shared.isRecording
+      message = GVSBSRecorder.shared.statusMessage
+    }
+  }
+}
+
+private struct RecordTab: View {
+  var inGame: Bool
+  var body: some View {
+    NavigationStack {
+      Form { RecordSection(inGame: inGame) }
+        .navigationTitle("Record")
+    }
+  }
+}
+#endif

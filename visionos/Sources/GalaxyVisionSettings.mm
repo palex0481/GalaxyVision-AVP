@@ -21,6 +21,7 @@ NSString *const GVKeyBButtonJumps = @"gv.bButtonJumps";
 NSString *const GVKeyAspect = @"gv.aspect";
 NSString *const GVKeySmoothMotion = @"gv.smoothMotion";
 NSString *const GVKeyMute = @"gv.mute";
+NSString *const GVKeyAntialiasing = @"gv.antialiasing";
 
 static NSUserDefaults *Defaults(void) { return NSUserDefaults.standardUserDefaults; }
 
@@ -43,6 +44,7 @@ static NSUserDefaults *Defaults(void) { return NSUserDefaults.standardUserDefaul
     GVKeyAspect: @-1,
     GVKeySmoothMotion: @NO,
     GVKeyMute: @NO,
+    GVKeyAntialiasing: @0,
   }];
   // The ambient glow was removed: drop its old saved settings.
   for (NSString *key in @[ @"gv.ambientGlow", @"gv.glowStrength", @"gv.glowSize" ]) [Defaults() removeObjectForKey:key];
@@ -65,6 +67,10 @@ static NSUserDefaults *Defaults(void) { return NSUserDefaults.standardUserDefaul
 + (NSInteger)aspect { return [Defaults() integerForKey:GVKeyAspect]; }
 + (BOOL)smoothMotion { return [Defaults() boolForKey:GVKeySmoothMotion]; }
 + (BOOL)muted { return [Defaults() boolForKey:GVKeyMute]; }
++ (NSInteger)antialiasing {
+  const NSInteger v = [Defaults() integerForKey:GVKeyAntialiasing];
+  return (v == 1 || v == 2 || v == 4) ? v : 0;
+}
 // The engine keeps this volume across its own pause (galaxypad_engine_pause restores it on resume),
 // so unmuting always brings back full volume.
 + (void)applyAudio { galaxypad_engine_set_volume(self.muted ? 0.0f : 1.0f); }
@@ -105,6 +111,14 @@ static void RedirectTraceLog(void) {
   setenv("SDL_AUDIO_CATEGORY", "ambient", 1);
   // The flat window always renders at the window's native size (Supersampling removed).
   unsetenv("PETARI_RENDER_SCALE");
+  // Antialiasing (Graphics tab), read by the engine once at start: FXAA filters the finished picture (flat window
+  // and both eye images); 2x / 4x MSAA multisamples the game's frame buffer.
+  unsetenv("PETARI_FXAA");
+  unsetenv("PETARI_MSAA");
+  const NSInteger aa = self.antialiasing;
+  if (aa == 1) setenv("PETARI_FXAA", "1", 1);
+  if (aa == 2) setenv("PETARI_MSAA", "2", 1);
+  if (aa == 4) setenv("PETARI_MSAA", "4", 1);
   if (self.stereoSelected) {
     // Stereoscopic window (beta): the stereo bridge reports to the same trace log. The engine picks the
     // render scale (3x, 1920x1080 for 16:9) when stereo starts; the launcher does not set one for it.

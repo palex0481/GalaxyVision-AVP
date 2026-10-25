@@ -2,3 +2,4 @@
 #import "GalaxyVisionSettings.h"
 #import "GalaxyVisionStereoEngine.h"
 #import "../DiscIO/GVDiscIO.h"
+#import "GVAudioTap.h"

@@ -1,0 +1,6 @@
+// Side-by-side dev variant. Used via scripts/build-visionos-dev.sh (xcodebuild -xcconfig).
+PRODUCT_BUNDLE_IDENTIFIER = com.example.galaxyvision.dev
+GV_DISPLAY_NAME = GalaxyVision Dev
+// Dev-only defaults (GalaxyVisionSettings.mm): e.g. gyro aim on.
+GCC_PREPROCESSOR_DEFINITIONS = $(inherited) GV_DEV=1
+SWIFT_ACTIVE_COMPILATION_CONDITIONS = $(inherited) GV_DEV

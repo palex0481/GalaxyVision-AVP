@@ -6,6 +6,7 @@
 // shows the SwiftUI launcher; Play then hands the scene to the engine's SDL3 scene delegate, whose
 // window is the flat virtual screen. Without game data the launcher shows the import placeholder
 // (import is not implemented yet).
+#import "GVAudioTap.h"
 #import <QuartzCore/CAMetalLayer.h>
 #import <UIKit/UIKit.h>
 #import <UniformTypeIdentifiers/UniformTypeIdentifiers.h>
@@ -402,6 +403,9 @@ int main(int argc, char *argv[]) {
       NSArray<NSString *> *args = @[ @"GalaxyVision", @"--disc", game.path, @"--user", user.path ];
       char **engineArgv = (char **)calloc(args.count + 1, sizeof(char *));
       for (NSUInteger i = 0; i < args.count; ++i) engineArgv[i] = strdup(args[i].fileSystemRepresentation);
+#if GV_DEV
+      [GVAudioTap install];  // game audio for the side-by-side 3D recorder (before the engine opens its AudioQueue)
+#endif
       return galaxypad_engine_main((int)args.count, engineArgv);
     }
     return UIApplicationMain(argc, argv, nil, NSStringFromClass(GalaxyVisionAppDelegate.class));

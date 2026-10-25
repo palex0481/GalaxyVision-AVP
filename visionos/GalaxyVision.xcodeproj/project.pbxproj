@@ -16,11 +16,13 @@
 		5AC421572CE6F050D3A4B782 /* GalaxyPadEngine.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 2D1E6B43CB0E6A2FE52F016C /* GalaxyPadEngine.framework */; };
 		68A6B83A23EFBEBAA13C42F3 /* GalaxyVisionController.mm in Sources */ = {isa = PBXBuildFile; fileRef = 4BACAFC35890EA3401E27C29 /* GalaxyVisionController.mm */; };
 		6B47641DE9CE74950328FB51 /* main.mm in Sources */ = {isa = PBXBuildFile; fileRef = 83D45D20E19019C86E747EAC /* main.mm */; };
+		742BA138FA31B3EAFB1880B5 /* GVAudioTap.mm in Sources */ = {isa = PBXBuildFile; fileRef = D6AB89D9969600E28A2C7A7B /* GVAudioTap.mm */; };
 		7D2667BAEBFB03D05CD5A6A1 /* Metal.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 59C063713F25D74D674C471B /* Metal.framework */; };
 		7EF4F79CE8FF6779941E35A0 /* NativeStereoPlaceholder.png in Resources */ = {isa = PBXBuildFile; fileRef = 93C32612454A717A7027FE8D /* NativeStereoPlaceholder.png */; };
 		7F61C2231A136A1B7BCAC35B /* RealityKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 14A65D1EA2E79D30DFF44335 /* RealityKit.framework */; };
 		87254B6F68B6790DD8C50B7A /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 5BA56ACBADEFCE5F9A181398 /* Assets.xcassets */; };
 		8C9A2658160C768E32962A43 /* Stereo-Apple-LICENSE.txt in Resources */ = {isa = PBXBuildFile; fileRef = 3BC59FDC8646D78C29E36ED0 /* Stereo-Apple-LICENSE.txt */; };
+		962FBA3654A0C5728FC5942A /* GVSBSRecorder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 04C852B49A68995A39C9FC23 /* GVSBSRecorder.swift */; };
 		A2DBDA356E5FCC2E946C6551 /* GalaxyVisionSettings.mm in Sources */ = {isa = PBXBuildFile; fileRef = 26C89ABD504C8C0FB38B7C50 /* GalaxyVisionSettings.mm */; };
 		BDBC5052BB7F5FE28E816DFC /* GalaxyVisionLauncher.swift in Sources */ = {isa = PBXBuildFile; fileRef = B84CEB9E7B76B15665EB1079 /* GalaxyVisionLauncher.swift */; };
 		CB7A084524B549ED16A4E2DB /* IOSurface.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 75821B89F4D57913536069C4 /* IOSurface.framework */; };
@@ -44,6 +46,8 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		04C852B49A68995A39C9FC23 /* GVSBSRecorder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GVSBSRecorder.swift; sourceTree = "<group>"; };
+		086C25A2818B81F62224F0A1 /* GVAudioTap.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = GVAudioTap.h; sourceTree = "<group>"; };
 		14A65D1EA2E79D30DFF44335 /* RealityKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = RealityKit.framework; path = System/Library/Frameworks/RealityKit.framework; sourceTree = SDKROOT; };
 		26C89ABD504C8C0FB38B7C50 /* GalaxyVisionSettings.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = GalaxyVisionSettings.mm; sourceTree = "<group>"; };
 		29BE28FDC4F9A5B29E608820 /* NativeStereo.usda */ = {isa = PBXFileReference; path = NativeStereo.usda; sourceTree = "<group>"; };
@@ -65,6 +69,7 @@
 		B84CEB9E7B76B15665EB1079 /* GalaxyVisionLauncher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GalaxyVisionLauncher.swift; sourceTree = "<group>"; };
 		BE68F1ABBA74EF4A9DF5B41D /* QuartzCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QuartzCore.framework; path = System/Library/Frameworks/QuartzCore.framework; sourceTree = SDKROOT; };
 		C8BC1635F6A1769F1325B72A /* GalaxyVisionController.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = GalaxyVisionController.h; sourceTree = "<group>"; };
+		D6AB89D9969600E28A2C7A7B /* GVAudioTap.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = GVAudioTap.mm; sourceTree = "<group>"; };
 		E425E53E125B1F8FACF18FC4 /* GalaxyVisionStereo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GalaxyVisionStereo.swift; sourceTree = "<group>"; };
 		F4950FF4E5FBFE527A5CA472 /* GalaxyVision-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "GalaxyVision-Bridging-Header.h"; sourceTree = "<group>"; };
 		F77BC0D13ADDB7866B9B1F14 /* GalaxyVision.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = GalaxyVision.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -139,6 +144,9 @@
 				E425E53E125B1F8FACF18FC4 /* GalaxyVisionStereo.swift */,
 				5D6FACF8654DD799D4502495 /* GalaxyVisionStereoEngine.h */,
 				30E6400E31BCDBC0601C43F5 /* GalaxyVisionStereoEngine.mm */,
+				086C25A2818B81F62224F0A1 /* GVAudioTap.h */,
+				D6AB89D9969600E28A2C7A7B /* GVAudioTap.mm */,
+				04C852B49A68995A39C9FC23 /* GVSBSRecorder.swift */,
 				83D45D20E19019C86E747EAC /* main.mm */,
 			);
 			path = Sources;
@@ -187,7 +195,7 @@
 				LastUpgradeCheck = 1430;
 				TargetAttributes = {
 					0E2163904A5A1AFF85F98FDD = {
-						DevelopmentTeam = YOURTEAMID;
+						DevelopmentTeam = "";
 						ProvisioningStyle = Automatic;
 					};
 				};
@@ -271,6 +279,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				742BA138FA31B3EAFB1880B5 /* GVAudioTap.mm in Sources */,
+				962FBA3654A0C5728FC5942A /* GVSBSRecorder.swift in Sources */,
 				68A6B83A23EFBEBAA13C42F3 /* GalaxyVisionController.mm in Sources */,
 				BDBC5052BB7F5FE28E816DFC /* GalaxyVisionLauncher.swift in Sources */,
 				A2DBDA356E5FCC2E946C6551 /* GalaxyVisionSettings.mm in Sources */,
@@ -290,7 +300,7 @@
 				CLANG_CXX_LANGUAGE_STANDARD = "c++20";
 				CLANG_ENABLE_OBJC_ARC = YES;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 3;
 				DEVELOPMENT_TEAM = "";
 				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				ENGINE_BUILD_DIR = "$(SRCROOT)/../generated/build/visionos-device-engine/native/app";
@@ -381,7 +391,7 @@
 				CLANG_CXX_LANGUAGE_STANDARD = "c++20";
 				CLANG_ENABLE_OBJC_ARC = YES;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 3;
 				DEVELOPMENT_TEAM = "";
 				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				ENGINE_BUILD_DIR = "$(SRCROOT)/../generated/build/visionos-device-engine/native/app";

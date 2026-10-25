@@ -21,6 +21,7 @@ extern NSString *const GVKeyTiltInvert;         // Bool
 extern NSString *const GVKeyBButtonJumps;       // Bool: Circle / N64 B jump (Switch style) instead of Wii B
 extern NSString *const GVKeyAspect;             // Int: -1 leave engine setting, 0 = 4:3, 1 = 16:9
 extern NSString *const GVKeySmoothMotion;
+extern NSString *const GVKeyAntialiasing;     // Int: 0 off (default), 1 FXAA, 2 = 2x MSAA, 4 = 4x MSAA (applies at the next start)
 extern NSString *const GVKeyMute;               // Bool: silence all game audio (music and sound effects), default off       // Bool (only has an effect on >=110 Hz displays)
 
 @interface GalaxyVisionSettings : NSObject
@@ -37,6 +38,7 @@ extern NSString *const GVKeyMute;               // Bool: silence all game audio 
 @property(class, readonly) NSInteger aspect;
 @property(class, readonly) BOOL smoothMotion;
 @property(class, readonly) BOOL muted;
+@property(class, readonly) NSInteger antialiasing;  // 0, 1 (FXAA), 2 or 4 (MSAA)
 // Sets the engine output volume from the Mute setting (0 muted, 1 otherwise). Safe before the
 // engine opens its audio device (the volume is kept and applied when it opens) and at any time after.
 + (void)applyAudio;
