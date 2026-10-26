@@ -34,6 +34,10 @@ final class GVSBSRecorder: NSObject, @unchecked Sendable {
   private var url: URL?
   private var sessionStart: CMTime?
   private var lastVideoTime = CMTime.invalid
+  // Constant 60 fps output: frames go on a 1/60 s grid from the first frame; gaps repeat the previous frame.
+  private static let fps: Int32 = 60
+  private var lastVideoIndex: Int64 = -1
+  private var lastPixelBuffer: CVPixelBuffer?
   private var audioFormat: CMAudioFormatDescription?
   private var audioFormatKey: [UInt32] = []
   private var audioNextTime: CMTime?
@@ -170,6 +174,8 @@ final class GVSBSRecorder: NSObject, @unchecked Sendable {
     lock.lock(); _pool = adaptor.pixelBufferPool; lock.unlock()
     sessionStart = nil
     lastVideoTime = .invalid
+    lastVideoIndex = -1
+    lastPixelBuffer = nil
     audioNextTime = nil
     videoFrames = 0
     droppedFrames = 0
@@ -218,13 +224,31 @@ final class GVSBSRecorder: NSObject, @unchecked Sendable {
       writer.startSession(atSourceTime: time)
       sessionStart = time
     }
-    guard lastVideoTime.isValid == false || time > lastVideoTime else { return }
-    guard videoInput.isReadyForMoreMediaData, adaptor.append(pixelBuffer, withPresentationTime: time) else {
+    guard let sessionStart else { return }
+    // The frame's slot on the 60 fps grid (nearest). A second frame in the same slot is dropped; skipped slots
+    // repeat the previous frame (at most 1 s of them), so every frame lasts exactly 1/60 s.
+    let index = Int64(((time - sessionStart).seconds * Double(Self.fps)).rounded())
+    guard index > lastVideoIndex else { return }
+    if let previous = lastPixelBuffer, lastVideoIndex >= 0 {
+      var fill = max(lastVideoIndex + 1, index - Int64(Self.fps))
+      while fill < index, videoInput.isReadyForMoreMediaData {
+        if adaptor.append(previous, withPresentationTime: gridTime(fill, from: sessionStart)) { lastVideoIndex = fill }
+        fill += 1
+      }
+    }
+    let slot = gridTime(index, from: sessionStart)
+    guard videoInput.isReadyForMoreMediaData, adaptor.append(pixelBuffer, withPresentationTime: slot) else {
       droppedFrames += 1
       return
     }
-    lastVideoTime = time
+    lastVideoIndex = index
+    lastPixelBuffer = pixelBuffer
+    lastVideoTime = gridTime(index + 1, from: sessionStart)  // the session ends after the last frame's 1/60 s
     videoFrames += 1
+  }
+
+  private func gridTime(_ index: Int64, from start: CMTime) -> CMTime {
+    start + CMTime(value: index, timescale: Self.fps)
   }
 
   // MARK: Audio (writer queue)
